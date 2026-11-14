@@ -9,7 +9,7 @@ on:
 jobs:
   python:
     name: Python 语法与规则测试
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,7 +32,7 @@ jobs:
 
   frontend:
     name: 桌面端前端静态检查
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
