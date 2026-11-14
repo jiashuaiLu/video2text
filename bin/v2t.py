@@ -94,6 +94,10 @@ def extract_terms(*texts, limit=18):
         m = m.strip()
         if m and m not in cands:
             cands.append(m)
+    # 话题标签：#砼核 #阈限空间 —— 视频主题词通常就藏在这里
+    for m in re.findall(r"#([\u4e00-\u9fff]{2,10})", blob):
+        if m not in cands:
+            cands.insert(0, m)   # 标签更可信，排在前面
     return cands[:limit]
 
 
@@ -130,20 +134,33 @@ def refresh_cookies():
 
 def grab_douyin(video_id):
     url = f"https://www.douyin.com/video/{video_id}"
-    for attempt in (1, 2, 3):
+    challenged = 0
+    for attempt, wait in ((1, 0), (2, 6), (3, 15)):
+        if wait:
+            time.sleep(wait)
+        # 第 1 次无头；被风控后改用有头（真实窗口），通过率显著提高
+        env = dict(os.environ, V2T_HEADFUL="1" if attempt >= 2 else "0")
+        if attempt == 2:
+            log("改用真实浏览器窗口抓取（可能会闪出一个 Chrome 窗口）")
         r = run([str(PY), str(ROOT / "bin/dy_grab.py"), url, str(refresh_cookies() or "")],
-                timeout=240)
+                timeout=300, env=env)
         try:
             info = json.loads(r.stdout)
         except Exception:
+            log(f"第 {attempt} 次抓取出错")
             continue
         media = [u for u in (info.get("media") or info.get("srcs") or [])
                  if not any(k in u for k in ("douyinstatic.com", "douyin-pc-web", "uuu_265"))]
         if media:
             return {"title": clean_title(info.get("title", "")) or f"douyin_{video_id}",
                     "desc": info.get("desc", ""), "media": media}
-        log(f"第 {attempt} 次未取到地址，重试…")
-        time.sleep(2)
+        if info.get("challenged"):
+            challenged += 1
+            log(f"第 {attempt} 次被抖音风控拦截（验证码），稍后重试…")
+        else:
+            log(f"第 {attempt} 次未取到地址，重试…")
+    if challenged:
+        log("抖音持续要求验证。可先在本机 Chrome 打开该视频看一次，再回来重试。")
     return None
 
 
