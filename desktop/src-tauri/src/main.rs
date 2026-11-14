@@ -38,6 +38,42 @@ fn python_bin(root: &Path) -> PathBuf {
     }
 }
 
+/// 环境自检：python3 / ffmpeg / Homebrew
+#[tauri::command]
+fn check_env() -> serde_json::Value {
+    let has = |cmd: &str, flag: &str| {
+        Command::new(cmd)
+            .arg(flag)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    };
+    let brew = Path::new("/opt/homebrew/bin/brew").exists()
+        || Path::new("/usr/local/bin/brew").exists();
+    serde_json::json!({
+        "python3": has("python3", "--version"),
+        "ffmpeg": has("ffmpeg", "-version"),
+        "brew": brew,
+    })
+}
+
+/// 复制到剪贴板（WKWebView 里 navigator.clipboard 不一定可用）
+#[tauri::command]
+fn copy_text(text: String) -> Result<(), String> {
+    use std::io::Write;
+    let mut child = Command::new("pbcopy")
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+    }
+    let _ = child.wait();
+    Ok(())
+}
+
 /// 是否需要首次初始化
 #[tauri::command]
 fn bootstrap_needed() -> bool {
@@ -269,6 +305,12 @@ fn open_out_dir() -> Result<(), String> {
 }
 
 fn main() {
+    // 命令行自检入口：video2text --check-env
+    if std::env::args().any(|a| a == "--check-env") {
+        println!("{}", check_env());
+        return;
+    }
+
     // 命令行自检入口：video2text --bootstrap
     if std::env::args().any(|a| a == "--bootstrap") {
         let root = project_root();
@@ -288,6 +330,8 @@ fn main() {
             backend_status,
             ui_ready,
             bootstrap_needed,
+            check_env,
+            copy_text,
             bootstrap,
             get_settings,
             save_settings,

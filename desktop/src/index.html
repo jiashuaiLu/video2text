@@ -19,7 +19,6 @@
     font:14px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
     display:flex;flex-direction:column;overflow:hidden}
 
-  /* 顶栏 */
   .bar{height:54px;display:flex;align-items:center;gap:10px;padding:0 28px;flex:none}
   .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(145deg,#17B587,#0B8F68);
     display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
@@ -32,14 +31,12 @@
     color:var(--ink3);cursor:pointer;font-size:15px;transition:.16s}
   .gear:hover{background:#EFF1F4;color:var(--ink2)}
 
-  /* 主体 */
   .wrap{flex:1;overflow-y:auto;display:flex;justify-content:center;min-height:0}
   .col{width:100%;max-width:660px;padding:34px 24px 28px;display:flex;flex-direction:column;gap:20px}
 
   .hero h1{margin:0 0 8px;font-size:25px;line-height:1.35;font-weight:600;letter-spacing:-.3px}
   .hero p{margin:0;color:var(--ink2);font-size:13.5px}
 
-  /* 输入 */
   .inputcard{display:flex;align-items:center;gap:8px;background:var(--surface);
     border:1px solid var(--line2);border-radius:14px;padding:7px 7px 7px 18px;box-shadow:var(--shadow);
     transition:.18s}
@@ -52,7 +49,6 @@
   .go:hover:not(:disabled){background:var(--green-d)}
   .go:disabled{opacity:.55;cursor:default}
 
-  /* 选项 */
   .opts{display:flex;align-items:flex-start;gap:9px;margin-top:-8px}
   .switch{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;flex:none;padding-top:1px}
   .switch input{display:none}
@@ -64,7 +60,6 @@
   .opts .txt{font-size:13px;color:var(--ink2)}
   .opts .hint{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:1px}
 
-  /* 步骤 */
   .steps{display:none;align-items:center;padding:2px 0}
   .steps.on{display:flex}
   .step{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink3)}
@@ -74,7 +69,6 @@
   .step.done{color:var(--ink2)} .step.done .dot{background:var(--green);opacity:.5}
   .sep{width:22px;height:1px;background:var(--line2);margin:0 10px}
 
-  /* 结果 */
   .card{display:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;
     padding:20px 22px;box-shadow:var(--shadow)}
   .card.on{display:block}
@@ -84,8 +78,8 @@
   .btn{border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:500;cursor:pointer;transition:.16s}
   .btn.primary{background:var(--green);color:#fff} .btn.primary:hover{background:var(--green-d)}
   .btn.plain{background:#F2F4F7;color:var(--ink2)} .btn.plain:hover{background:#EAEDF1}
+  .btn:disabled{opacity:.55;cursor:default}
 
-  /* 日志 */
   .logbox{flex:none;padding:0 28px 16px}
   .loghead{display:inline-flex;align-items:center;gap:5px;color:var(--ink3);font-size:12px;
     cursor:pointer;padding:4px 0}
@@ -96,14 +90,14 @@
   .log.on{display:block}
   .log .err{color:var(--red)} .log .ok{color:var(--green)} .log .step{color:var(--blue)}
 
-  /* 设置 */
-  .mask{position:fixed;inset:0;background:rgba(20,24,32,.26);backdrop-filter:blur(3px);
-    display:none;align-items:center;justify-content:center;z-index:60}
+  /* 弹层通用 */
+  .mask{position:fixed;inset:0;background:rgba(20,24,32,.28);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:60;padding:24px}
   .mask.on{display:flex}
   .sheet{width:560px;max-height:86vh;overflow-y:auto;background:var(--surface);border-radius:20px;
     padding:26px 28px;box-shadow:0 24px 64px -16px rgba(16,24,40,.28)}
   .sheet h2{margin:0 0 5px;font-size:17px;font-weight:600}
-  .sheet .sub{color:var(--ink3);font-size:12.5px;margin-bottom:22px}
+  .sheet .sub{color:var(--ink3);font-size:12.5px;margin-bottom:22px;line-height:1.6}
 
   .label{font-size:12.5px;color:var(--ink2);margin:20px 0 9px;font-weight:500}
   .seg{display:flex;background:#F2F4F7;border-radius:11px;padding:3px;gap:3px}
@@ -134,7 +128,6 @@
     border-radius:8px;font-size:13px;color:var(--ink);cursor:pointer;transition:.12s}
   .opt:hover{background:#F4F6F8}
   .opt.sel{background:var(--green-tint);color:var(--green-d);font-weight:500}
-  .opt small{color:var(--ink3);font-size:11px;font-weight:400}
   .opt .tick{color:var(--green);font-size:12px;opacity:0}
   .opt.sel .tick{opacity:1}
 
@@ -165,18 +158,20 @@
   .tip.ok{color:var(--green)} .tip.err{color:var(--red)}
   .foot{display:flex;justify-content:flex-end;gap:9px;margin-top:26px}
 
-  /* 首次初始化 */
-  .boot{position:fixed;inset:0;background:rgba(20,24,32,.4);backdrop-filter:blur(4px);
-    display:none;align-items:center;justify-content:center;z-index:90}
-  .boot.on{display:flex}
-  .bootcard{width:520px;background:var(--surface);border-radius:20px;padding:30px 32px;
-    box-shadow:0 24px 64px -16px rgba(16,24,40,.32);text-align:center}
-  .bootcard h2{margin:0 0 8px;font-size:18px}
-  .bootcard p{margin:0 0 20px;color:var(--ink2);font-size:13px;line-height:1.7}
-  .bootcard .steps-mini{text-align:left;background:#FAFBFC;border:1px solid var(--line);
-    border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:20px}
-  .bootcard .steps-mini div{padding:3px 0}
-  .bootcard .big{width:100%;padding:11px;font-size:14px}
+  /* 准备流程 */
+  .check{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px}
+  .check .ic{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:11px;flex:none}
+  .check .ic.ok{background:var(--green-tint);color:var(--green)}
+  .check .ic.bad{background:#FDECEC;color:var(--red)}
+  .check .why{color:var(--ink3);font-size:11.5px;margin-left:auto}
+  .cmd{display:flex;align-items:center;gap:8px;margin:6px 0 2px;background:#0F1115;
+    border-radius:8px;padding:9px 12px}
+  .cmd code{flex:1;color:#C9D3E4;font:12px/1.4 ui-monospace,Menlo,monospace;
+    overflow-x:auto;white-space:nowrap}
+  .cmd button{border:0;background:#242A35;color:#B8C2D4;border-radius:6px;padding:4px 10px;
+    font-size:11.5px;cursor:pointer;flex:none}
+  .cmd button:hover{background:#2F3745;color:#fff}
 </style>
 </head>
 <body>
@@ -238,21 +233,27 @@
   <div class="log" id="log"></div>
 </div>
 
-<div class="boot" id="boot">
-  <div class="bootcard">
-    <h2>首次使用，需要准备一下</h2>
-    <p>会在本机安装一个独立的运行环境（约 2-3 分钟），只做一次。</p>
-    <div class="steps-mini">
-      <div>① 复制内置脚本</div>
-      <div>② 创建 Python 环境</div>
-      <div>③ 安装转写依赖</div>
-      <div>④ 检查 ffmpeg</div>
+<!-- 准备/环境引导（唯一弹层，二者合一） -->
+<div class="mask" id="setup">
+  <div class="sheet" style="width:520px">
+    <h2 id="setupTitle">准备一下就能用了</h2>
+    <div class="sub" id="setupSub">检查一下这台电脑的环境</div>
+
+    <div id="setupChecks"></div>
+    <div id="setupCmds"></div>
+
+    <div class="foot" style="justify-content:space-between;margin-top:22px">
+      <button class="btn plain" id="setupRecheck">重新检测</button>
+      <div style="display:flex;gap:9px">
+        <button class="btn plain" id="setupLater">稍后</button>
+        <button class="btn primary" id="setupGo" style="display:none">开始准备</button>
+      </div>
     </div>
-    <button class="btn primary big" id="bootGo">开始准备</button>
-    <div class="tip" id="bootTip" style="margin-top:14px"></div>
+    <div class="tip" id="setupTip" style="margin-top:10px"></div>
   </div>
 </div>
 
+<!-- 设置 -->
 <div class="mask" id="settings">
   <div class="sheet">
     <h2>设置</h2>
@@ -269,8 +270,7 @@
       <div class="select" id="providerSel">
         <button class="sel-btn" type="button">
           <span class="sel-text">DeepSeek</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M6 9l6 6 6-6"/></svg>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu"></div>
       </div>
@@ -286,8 +286,7 @@
       <div class="select combo" id="modelSel">
         <input id="modelInput" type="text" placeholder="选择或直接输入模型名" autocomplete="off" spellcheck="false" />
         <button class="chev-btn" type="button" title="常用模型">
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M6 9l6 6 6-6"/></svg>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu"></div>
       </div>
@@ -330,6 +329,8 @@ const PROVIDERS = {
   openrouter: { name: "OpenRouter",    base: "https://openrouter.ai/api/v1",                      models: ["anthropic/claude-3.5-sonnet"] },
   custom:     { name: "自定义接口",    base: "",                                                  models: [] },
 };
+const BREW_CMD = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"';
+const PKG_CMD = 'brew install python ffmpeg';
 
 let state = { backend: "local", provider: "deepseek", model: "", baseUrl: "", keySet: false };
 let lastMd = "";
@@ -359,12 +360,121 @@ function setMode(backend) {
   b.classList.toggle("cloud", backend === "api");
 }
 
+/* ---------- 环境与准备 ---------- */
+async function copyText(text, btn) {
+  try {
+    await invoke("copy_text", { text });
+    const old = btn.textContent;
+    btn.textContent = "已复制";
+    setTimeout(() => (btn.textContent = old), 1200);
+  } catch (e) { btn.textContent = "复制失败"; }
+}
+function cmdRow(text) {
+  const wrap = document.createElement("div");
+  wrap.className = "cmd";
+  const code = document.createElement("code");
+  code.textContent = text;
+  const b = document.createElement("button");
+  b.textContent = "复制";
+  b.addEventListener("click", () => copyText(text, b));
+  wrap.append(code, b);
+  return wrap;
+}
+function checkRow(ok, label, why) {
+  const row = document.createElement("div");
+  row.className = "check";
+  const ic = document.createElement("span");
+  ic.className = "ic " + (ok ? "ok" : "bad");
+  ic.textContent = ok ? "✓" : "✕";
+  const t = document.createElement("span");
+  t.textContent = label;
+  const w = document.createElement("span");
+  w.className = "why";
+  w.textContent = why || "";
+  row.append(ic, t, w);
+  return row;
+}
+
+async function probe() {
+  const env = JSON.parse(await invoke("check_env"));
+  const needBoot = await invoke("bootstrap_needed");
+  return { ...env, needBoot };
+}
+
+async function showSetup() {
+  const s = await probe();
+  const checks = $("setupChecks");
+  const cmds = $("setupCmds");
+  checks.innerHTML = "";
+  cmds.innerHTML = "";
+
+  checks.appendChild(checkRow(s.python3, "python3", s.python3 ? "" : "未安装"));
+  checks.appendChild(checkRow(s.ffmpeg, "ffmpeg", s.ffmpeg ? "" : "未安装"));
+  checks.appendChild(checkRow(!s.needBoot, "运行环境", s.needBoot ? "待初始化" : "已就绪"));
+
+  const missing = !s.python3 || !s.ffmpeg;
+  if (!s.brew && missing) {
+    const hint = document.createElement("div");
+    hint.className = "note";
+    hint.textContent = "先装 Homebrew（macOS 包管理器），会要求输入开机密码：";
+    cmds.append(hint, cmdRow(BREW_CMD));
+  }
+  if (missing) {
+    const hint = document.createElement("div");
+    hint.className = "note";
+    hint.textContent = s.brew ? "执行下面这条命令：" : "装好 Homebrew 后再执行：";
+    cmds.append(hint, cmdRow(PKG_CMD));
+  }
+
+  $("setupGo").style.display = (!missing && s.needBoot) ? "inline-block" : "none";
+  $("setupTitle").textContent = missing ? "还差两个命令行工具" : (s.needBoot ? "首次使用，需要准备一下" : "一切就绪");
+  $("setupSub").textContent = missing
+    ? "装好后就不用再管了，之后全部离线运行。"
+    : (s.needBoot ? "会在本机安装独立的运行环境（约 2-3 分钟），只做一次。" : "可以直接开始转写。");
+  $("setupTip").textContent = "";
+  $("setup").classList.add("on");
+  return !missing && !s.needBoot;
+}
+
+async function ensureReady() {
+  const s = await probe();
+  if (s.python3 && s.ffmpeg && !s.needBoot) return true;
+  await showSetup();
+  return false;
+}
+
+$("setupRecheck").addEventListener("click", async () => {
+  $("setupTip").className = "tip";
+  $("setupTip").textContent = "检测中…";
+  const ready = await showSetup();
+  if (ready) {
+    $("setupTip").className = "tip ok";
+    $("setupTip").textContent = "✅ 已就绪，可以开始转写了";
+    setTimeout(() => $("setup").classList.remove("on"), 900);
+  } else {
+    $("setupTip").textContent = "仍有项目未就绪，请确认命令已执行成功";
+  }
+});
+$("setupLater").addEventListener("click", () => $("setup").classList.remove("on"));
+$("setupGo").addEventListener("click", async () => {
+  $("setupGo").disabled = true;
+  $("setupGo").textContent = "准备中…";
+  $("setupTip").textContent = "正在安装，请勿关闭窗口";
+  try { await invoke("bootstrap"); }
+  catch (e) {
+    $("setupTip").className = "tip err";
+    $("setupTip").textContent = "初始化失败：" + e;
+    $("setupGo").disabled = false;
+    $("setupGo").textContent = "重试";
+  }
+});
+
 /* ---------- 自定义下拉 ---------- */
 function closeAllSelects(except) {
-  document.querySelectorAll(".select.open").forEach((el) => {
-    if (el !== except) el.classList.remove("open");
-  });
+  document.querySelectorAll(".select.open").forEach((el) => { if (el !== except) el.classList.remove("open"); });
 }
+document.addEventListener("click", () => closeAllSelects(null));
+
 function renderSelect(el, items, current, onPick) {
   const menu = el.querySelector(".menu");
   const text = el.querySelector(".sel-text");
@@ -372,38 +482,35 @@ function renderSelect(el, items, current, onPick) {
   items.forEach((it) => {
     const row = document.createElement("div");
     row.className = "opt" + (it.value === current ? " sel" : "");
-    row.innerHTML = `<span>${it.label}${it.sub ? `<small> ${it.sub}</small>` : ""}</span><span class="tick">✓</span>`;
+    row.innerHTML = `<span>${it.label}</span><span class="tick">✓</span>`;
     row.addEventListener("click", (e) => {
       e.stopPropagation();
-      text.textContent = it.label;
+      if (text) text.textContent = it.label;
       el.classList.remove("open");
       onPick(it.value);
     });
     menu.appendChild(row);
   });
-  if (!items.length) menu.innerHTML = `<div class="opt"><span>（无可选项）</span></div>`;
+  if (!items.length) menu.innerHTML = `<div class="opt" style="color:var(--ink3);cursor:default"><span>（无可选项）</span></div>`;
   const cur = items.find((i) => i.value === current);
-  if (cur) text.textContent = cur.label;
+  if (cur && text) text.textContent = cur.label;
 }
 function bindSelect(el) {
   el.querySelector(".sel-btn").addEventListener("click", (e) => {
     e.stopPropagation();
-    const open = el.classList.toggle("open");
-    if (open) closeAllSelects(el);
+    if (el.classList.toggle("open")) closeAllSelects(el);
   });
 }
-document.addEventListener("click", () => closeAllSelects(null));
-
 function renderProviders() {
   const items = Object.entries(PROVIDERS).map(([k, v]) => ({ value: k, label: v.name }));
   renderSelect($("providerSel"), items, selProvider, (v) => {
     selProvider = v;
     $("baseUrl").value = PROVIDERS[v]?.base || "";
     selModel = PROVIDERS[v]?.models?.[0] || "";
+    $("modelInput").value = selModel;
     renderModels();
-    const det = $("baseUrl").closest("details");
     if (v === "custom") {
-      det.open = true;                        // 自定义接口必须填地址，直接展开
+      $("baseUrl").closest("details").open = true;
       setTimeout(() => $("baseUrl").focus(), 60);
     }
   });
@@ -415,13 +522,12 @@ function renderModels(filter) {
   const menu = $("modelSel").querySelector(".menu");
   menu.innerHTML = "";
   if (!list.length) {
-    menu.innerHTML = `<div class="opt" style="color:var(--ink3);cursor:default">
-      <span>${base.length ? "没有匹配的预设，可直接输入" : "直接输入模型名即可"}</span></div>`;
+    menu.innerHTML = `<div class="opt" style="color:var(--ink3);cursor:default"><span>${base.length ? "没有匹配项，可直接输入" : "直接输入模型名即可"}</span></div>`;
     return;
   }
   list.forEach((m) => {
     const row = document.createElement("div");
-    row.className = "opt" + (m === $("modelInput").value.trim() ? " sel" : "");
+    row.className = "opt";
     row.innerHTML = `<span>${m}</span><span class="tick">✓</span>`;
     row.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -432,7 +538,6 @@ function renderModels(filter) {
     menu.appendChild(row);
   });
 }
-
 function openModelMenu() {
   closeAllSelects($("modelSel"));
   $("modelSel").classList.add("open");
@@ -448,11 +553,14 @@ function openModelMenu() {
               keyMasked: s.key_masked };
     setMode(state.backend);
   } catch (e) { console.error(e); }
+  const s = await probe();
+  if (!(s.python3 && s.ffmpeg && !s.needBoot)) showSetup();
 })();
 
 $("run").addEventListener("click", async () => {
   const link = $("link").value.trim();
   if (!link) { $("link").focus(); return; }
+  if (!(await ensureReady())) return;
   $("log").textContent = "";
   $("result").classList.remove("on");
   $("run").disabled = true; $("link").disabled = true;
@@ -470,7 +578,7 @@ $("link").addEventListener("keydown", (e) => { if (e.key === "Enter") $("run").c
 
 listen("v2t-log", (e) => {
   const t = e.payload;
-  log(t, /失败|错误|Error/.test(t) ? "err" : (/^\[v2t\]/.test(t) ? "step" : ""));
+  log(t, /失败|错误|Error/.test(t) ? "err" : (/^\[v2t\]|^\[初始化\]/.test(t) ? "step" : ""));
   if (/抖音 ID|下载/.test(t)) setStep(1, "now");
   if (/ASR 转写中/.test(t)) { setStep(1, "done"); setStep(2, "now"); }
   if (/转写完成/.test(t)) { setStep(2, "done"); setStep(3, "now"); }
@@ -485,15 +593,24 @@ listen("v2t-log", (e) => {
   }
 });
 listen("v2t-done", (e) => {
-  $("run").disabled = false; $("link").disabled = false;
-  if (e.payload.code === 0) {
-    setStep(4, "done"); $("result").classList.add("on");
-    if ($("boot").classList.contains("on")) {
-      $("boot").classList.remove("on");
-      invoke("get_settings").then((raw) => setMode(JSON.parse(raw).backend)).catch(() => {});
+  const { code } = e.payload;
+  if ($("setup").classList.contains("on") && $("setupGo").textContent.includes("准备")) {
+    // 初始化结束
+    $("setupGo").disabled = false;
+    $("setupGo").textContent = "开始准备";
+    if (code === 0) {
+      $("setupTip").className = "tip ok";
+      $("setupTip").textContent = "✅ 准备完成";
+      setTimeout(() => { $("setup").classList.remove("on"); showSetup(); }, 800);
+    } else {
+      $("setupTip").className = "tip err";
+      $("setupTip").textContent = "初始化未完成，请看运行日志";
     }
+    return;
   }
-  else log("处理失败，退出码 " + e.payload.code, "err");
+  $("run").disabled = false; $("link").disabled = false;
+  if (code === 0) { setStep(4, "done"); $("result").classList.add("on"); }
+  else log("处理失败，退出码 " + code, "err");
 });
 
 $("openDoc").addEventListener("click", () => lastMd && invoke("open_path", { path: lastMd }));
@@ -509,7 +626,6 @@ function applyBackendUI() {
   $("cApi").classList.toggle("on", state.backend === "api");
   $("cloudBox").style.display = state.backend === "api" ? "block" : "none";
 }
-
 $("gear").addEventListener("click", () => {
   selProvider = state.provider || "deepseek";
   selModel = state.model || (PROVIDERS[selProvider]?.models?.[0] || "");
@@ -518,22 +634,35 @@ $("gear").addEventListener("click", () => {
   renderModels();
   $("baseUrl").value = state.baseUrl || PROVIDERS[selProvider]?.base || "";
   $("apiKey").value = "";
-  $("apiKey").placeholder = state.keySet
-    ? "已保存（" + state.keyMasked + "），留空不修改" : "粘贴你的 API Key";
+  $("apiKey").placeholder = state.keySet ? "已保存（" + state.keyMasked + "），留空不修改" : "粘贴你的 API Key";
   $("testTip").textContent = ""; $("testTip").className = "tip";
   applyBackendUI();
   $("settings").classList.add("on");
 });
 $("cancel").addEventListener("click", () => $("settings").classList.remove("on"));
-$("settings").addEventListener("click", (e) => {
-  if (e.target.id === "settings") $("settings").classList.remove("on");
-});
+$("settings").addEventListener("click", (e) => { if (e.target.id === "settings") $("settings").classList.remove("on"); });
 document.querySelectorAll(".seg button").forEach((el) => {
   el.addEventListener("click", () => { state.backend = el.dataset.backend; applyBackendUI(); });
 });
 $("eye").addEventListener("click", () => {
   const k = $("apiKey"); k.type = k.type === "password" ? "text" : "password";
 });
+$("modelSel").querySelector(".chev-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if ($("modelSel").classList.contains("open")) $("modelSel").classList.remove("open");
+  else openModelMenu();
+});
+$("modelInput").addEventListener("focus", openModelMenu);
+$("modelInput").addEventListener("input", () => {
+  selModel = $("modelInput").value.trim();
+  renderModels(selModel);
+  $("modelSel").classList.add("open");
+});
+$("modelInput").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("modelSel").classList.remove("open");
+  if (e.key === "Enter") { selModel = $("modelInput").value.trim(); $("modelSel").classList.remove("open"); }
+});
+
 $("testBtn").addEventListener("click", async () => {
   $("testTip").className = "tip"; $("testTip").textContent = "测试中…";
   try {
@@ -553,7 +682,7 @@ $("testBtn").addEventListener("click", async () => {
 
 async function saveSettings(silent) {
   if (selProvider === "custom" && !$("baseUrl").value.trim()) {
-    const det = $("baseUrl").closest("details"); det.open = true;
+    $("baseUrl").closest("details").open = true;
     $("testTip").className = "tip err";
     $("testTip").textContent = "请先填写接口地址，例如 https://api.deepseek.com/v1";
     $("baseUrl").focus();
@@ -574,44 +703,7 @@ async function saveSettings(silent) {
 }
 $("save").addEventListener("click", () => saveSettings(false));
 bindSelect($("providerSel"));
-$("modelSel").querySelector(".chev-btn").addEventListener("click", (e) => {
-  e.stopPropagation();
-  if ($("modelSel").classList.contains("open")) $("modelSel").classList.remove("open");
-  else openModelMenu();
-});
-$("modelInput").addEventListener("focus", openModelMenu);
-$("modelInput").addEventListener("input", () => {
-  selModel = $("modelInput").value.trim();
-  renderModels(selModel);
-  $("modelSel").classList.add("open");
-});
-$("modelInput").addEventListener("keydown", (e) => {
-  if (e.key === "Escape") $("modelSel").classList.remove("open");
-  if (e.key === "Enter") { selModel = $("modelInput").value.trim(); $("modelSel").classList.remove("open"); }
-});
 
-/* 首次初始化 */
-(async () => {
-  try {
-    const need = await invoke("bootstrap_needed");
-    if (need) $("boot").classList.add("on");
-  } catch (e) { console.error(e); }
-})();
-$("bootGo") && ($("bootGo").addEventListener("click", async () => {
-  $("bootGo").disabled = true;
-  $("bootGo").textContent = "准备中…";
-  $("bootTip").textContent = "正在安装，请不要关闭窗口";
-  try {
-    await invoke("bootstrap");
-  } catch (e) {
-    $("bootTip").className = "tip err";
-    $("bootTip").textContent = "初始化失败：" + e;
-    $("bootGo").disabled = false;
-    $("bootGo").textContent = "重试";
-  }
-}));
-
-const _origDone = null;
 invoke("ui_ready", { msg: "OK|" + document.body.scrollWidth + "x" + document.body.scrollHeight }).catch(() => {});
 </script>
 </body>
