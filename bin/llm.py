@@ -95,11 +95,10 @@ def load_config(cli_path: str | None = None, overrides: dict | None = None) -> d
         cfg["llm"]["backend"] = ("api" if (cfg["llm"]["base_url"] and cfg["llm"]["api_key"])
                                  else "local")
     if cfg["llm"]["backend"] == "api" and not (cfg["llm"]["base_url"] and cfg["llm"]["api_key"]):
-        raise SystemExit(
-            "backend=api 但缺少 base_url 或 api_key。\n"
-            "可在 config.json 里配置，或用环境变量 V2T_BASE_URL / V2T_API_KEY，\n"
-            "或命令行 --base-url / --api-key。"
-        )
+        # 云端没配好就回退本地，不让用户卡死在这里
+        print("提示：云端模型未配置完整（缺接口地址或 API Key），本次改用本地模型。",
+              flush=True)
+        cfg["llm"]["backend"] = "local"
     return cfg
 
 
