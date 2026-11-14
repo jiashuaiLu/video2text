@@ -1,0 +1,4 @@
+#!/bin/bash
+# 便携启动脚本：自动定位工程根目录
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec "$HERE/.venv/bin/python" "$HERE/bin/v2t.py" "$@"

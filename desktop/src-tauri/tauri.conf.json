@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "视频转文稿",
+  "version": "1.0.0",
+  "identifier": "local.v2t.desktop",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "视频转文稿",
+        "width": 1000,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 560,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}
