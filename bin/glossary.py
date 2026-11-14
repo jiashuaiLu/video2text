@@ -21,7 +21,7 @@ try:
 except ImportError:  # 没装拼音库时退化为前两层
     lazy_pinyin = None
 
-LATIN_RUN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:\s+[A-Za-z][A-Za-z0-9]*){0,2}")
+LATIN_RUN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[ \u00a0]+[A-Za-z][A-Za-z0-9]*){0,5}")
 CJK_RUN = re.compile(r"[\u4e00-\u9fff]+")
 
 # 不做模糊替换的常见词，避免误伤
@@ -128,10 +128,12 @@ def correct(text: str, glossary: dict) -> tuple[str, list[tuple[str, str]]]:
                 fixes.append((raw, term))
             return term
         if len(key) >= 6:
+            # 长词容忍 2 个编辑距离（"apcstar" vs "apkstart"），短词保持严格
+            maxd = 2 if len(key) >= 7 else 1
             for cand, term in idx["latin"].items():
                 if cand == key:
                     continue
-                if _lev(key, cand, 1) <= 1:
+                if _lev(key, cand, maxd) <= maxd:
                     fixes.append((raw, term))
                     return term
         return raw
