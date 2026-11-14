@@ -112,14 +112,26 @@ def load_cookies(path):
     return out
 
 
-def launch_chrome(port):
-    profile = tempfile.mkdtemp(prefix="dyprof_")
-    proc = subprocess.Popen(
-        [CHROME, "--headless=new", f"--remote-debugging-port={port}",
+PROFILE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                           "work", "chrome-profile")
+
+
+def launch_chrome(port, profile=None):
+    """复用持久化 profile：多次抓取视为同一设备，显著降低风控概率。"""
+    profile = profile or PROFILE_DIR
+    os.makedirs(profile, exist_ok=True)
+    headful = os.environ.get("V2T_HEADFUL") == "1"
+    args = [CHROME]
+    if not headful:
+        args.append("--headless=new")
+    args += [f"--remote-debugging-port={port}",
          f"--user-data-dir={profile}", "--no-first-run", "--no-default-browser-check",
          "--disable-gpu", "--mute-audio", "--window-size=1280,900",
-         "--autoplay-policy=no-user-gesture-required", "about:blank"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+         "--disable-blink-features=AutomationControlled",
+         "--disable-features=AutomationControlled,Translate",
+         "--lang=zh-CN",
+         "--autoplay-policy=no-user-gesture-required", "about:blank"]
+    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(60):
         try:
             with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=1) as r:
@@ -170,8 +182,11 @@ def grab(url, cookies, port=9333, quiet=True):
             if media:
                 break
         srcs = page.get("srcs") or []
+        title = (page.get("title") or "").strip()
+        challenged = any(k in title for k in ("验证码", "验证", "安全")) or "captcha" in str(page).lower()
         return {
-            "title": (page.get("title") or "").replace(" - 抖音", "").strip(),
+            "challenged": challenged,
+            "title": title.replace(" - 抖音", "").strip(),
             "desc": page.get("desc", ""),
             "media": media or srcs,
             "srcs": srcs,
@@ -179,8 +194,10 @@ def grab(url, cookies, port=9333, quiet=True):
         }
     finally:
         proc.kill()
-        proc.wait(timeout=10)
-        shutil.rmtree(profile, ignore_errors=True)
+        try:
+            proc.wait(timeout=10)
+        except Exception:
+            pass
 
 
 def main():
