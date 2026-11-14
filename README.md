@@ -23,7 +23,20 @@
 - **提取文字（默认）**：约 40 秒（7 分钟视频）。转写 + 术语纠错 + 规则排版，**不调用任何大模型**。
 - **AI 整理成文章（可选）**：2-4 分钟。补标点、分段、纠错，并生成一句话概括、关键要点、数字清单。
 
-## 快速开始（macOS Apple Silicon）
+## 下载即用（推荐）
+
+到 [Releases](https://github.com/jiashuaiLu/video2text/releases) 下载 `视频转文稿-macOS.zip`：
+
+1. 解压，把 App 拖进「应用程序」
+2. 首次打开：右键点图标 → 打开（未做公证签名，需手动放行一次）
+3. 点「开始准备」，App 自动在本机装好运行环境（2-3 分钟，只做一次）
+4. 之后粘链接就能用
+
+需要系统里有 `python3` 和 `ffmpeg`（`brew install python ffmpeg`）。首次转写会下载约 2.4GB 语音模型，之后完全离线。
+
+数据目录：`~/Library/Application Support/video2text`
+
+## 从源码开始（macOS Apple Silicon）
 
 ```bash
 git clone <this-repo> && cd v2t

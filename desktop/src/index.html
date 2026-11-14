@@ -164,6 +164,19 @@
   .tip{font-size:12px;color:var(--ink3)}
   .tip.ok{color:var(--green)} .tip.err{color:var(--red)}
   .foot{display:flex;justify-content:flex-end;gap:9px;margin-top:26px}
+
+  /* 首次初始化 */
+  .boot{position:fixed;inset:0;background:rgba(20,24,32,.4);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:90}
+  .boot.on{display:flex}
+  .bootcard{width:520px;background:var(--surface);border-radius:20px;padding:30px 32px;
+    box-shadow:0 24px 64px -16px rgba(16,24,40,.32);text-align:center}
+  .bootcard h2{margin:0 0 8px;font-size:18px}
+  .bootcard p{margin:0 0 20px;color:var(--ink2);font-size:13px;line-height:1.7}
+  .bootcard .steps-mini{text-align:left;background:#FAFBFC;border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:20px}
+  .bootcard .steps-mini div{padding:3px 0}
+  .bootcard .big{width:100%;padding:11px;font-size:14px}
 </style>
 </head>
 <body>
@@ -223,6 +236,21 @@
 <div class="logbox">
   <div class="loghead" id="logToggle">▸ 运行日志</div>
   <div class="log" id="log"></div>
+</div>
+
+<div class="boot" id="boot">
+  <div class="bootcard">
+    <h2>首次使用，需要准备一下</h2>
+    <p>会在本机安装一个独立的运行环境（约 2-3 分钟），只做一次。</p>
+    <div class="steps-mini">
+      <div>① 复制内置脚本</div>
+      <div>② 创建 Python 环境</div>
+      <div>③ 安装转写依赖</div>
+      <div>④ 检查 ffmpeg</div>
+    </div>
+    <button class="btn primary big" id="bootGo">开始准备</button>
+    <div class="tip" id="bootTip" style="margin-top:14px"></div>
+  </div>
 </div>
 
 <div class="mask" id="settings">
@@ -458,7 +486,13 @@ listen("v2t-log", (e) => {
 });
 listen("v2t-done", (e) => {
   $("run").disabled = false; $("link").disabled = false;
-  if (e.payload.code === 0) { setStep(4, "done"); $("result").classList.add("on"); }
+  if (e.payload.code === 0) {
+    setStep(4, "done"); $("result").classList.add("on");
+    if ($("boot").classList.contains("on")) {
+      $("boot").classList.remove("on");
+      invoke("get_settings").then((raw) => setMode(JSON.parse(raw).backend)).catch(() => {});
+    }
+  }
   else log("处理失败，退出码 " + e.payload.code, "err");
 });
 
@@ -556,6 +590,28 @@ $("modelInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") { selModel = $("modelInput").value.trim(); $("modelSel").classList.remove("open"); }
 });
 
+/* 首次初始化 */
+(async () => {
+  try {
+    const need = await invoke("bootstrap_needed");
+    if (need) $("boot").classList.add("on");
+  } catch (e) { console.error(e); }
+})();
+$("bootGo") && ($("bootGo").addEventListener("click", async () => {
+  $("bootGo").disabled = true;
+  $("bootGo").textContent = "准备中…";
+  $("bootTip").textContent = "正在安装，请不要关闭窗口";
+  try {
+    await invoke("bootstrap");
+  } catch (e) {
+    $("bootTip").className = "tip err";
+    $("bootTip").textContent = "初始化失败：" + e;
+    $("bootGo").disabled = false;
+    $("bootGo").textContent = "重试";
+  }
+}));
+
+const _origDone = null;
 invoke("ui_ready", { msg: "OK|" + document.body.scrollWidth + "x" + document.body.scrollHeight }).catch(() => {});
 </script>
 </body>
