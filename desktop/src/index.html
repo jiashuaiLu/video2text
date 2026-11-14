@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>视频转文稿</title>
+<style>
+  :root{
+    --bg:#F7F8FA; --surface:#FFFFFF;
+    --ink:#1B1E24; --ink2:#5A616E; --ink3:#9AA0AC;
+    --line:#ECEEF2; --line2:#E2E5EA;
+    --green:#0FA375; --green-d:#0C8A62; --green-tint:#EAF7F2;
+    --blue:#4C6FFF; --red:#E5484D;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px -12px rgba(16,24,40,.12);
+    --shadow-lg:0 12px 32px -8px rgba(16,24,40,.18), 0 2px 6px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+    display:flex;flex-direction:column;overflow:hidden}
+
+  /* 顶栏 */
+  .bar{height:54px;display:flex;align-items:center;gap:10px;padding:0 28px;flex:none}
+  .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(145deg,#17B587,#0B8F68);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+  .name{font-size:13.5px;font-weight:600;letter-spacing:.2px}
+  .pill{font-size:11.5px;color:var(--green);background:var(--green-tint);padding:3px 9px;
+    border-radius:99px;font-weight:500}
+  .pill.cloud{color:var(--blue);background:#EEF1FF}
+  .grow{flex:1}
+  .gear{width:30px;height:30px;border-radius:8px;border:0;background:transparent;
+    color:var(--ink3);cursor:pointer;font-size:15px;transition:.16s}
+  .gear:hover{background:#EFF1F4;color:var(--ink2)}
+
+  /* 主体 */
+  .wrap{flex:1;overflow-y:auto;display:flex;justify-content:center;min-height:0}
+  .col{width:100%;max-width:660px;padding:34px 24px 28px;display:flex;flex-direction:column;gap:20px}
+
+  .hero h1{margin:0 0 8px;font-size:25px;line-height:1.35;font-weight:600;letter-spacing:-.3px}
+  .hero p{margin:0;color:var(--ink2);font-size:13.5px}
+
+  /* 输入 */
+  .inputcard{display:flex;align-items:center;gap:8px;background:var(--surface);
+    border:1px solid var(--line2);border-radius:14px;padding:7px 7px 7px 18px;box-shadow:var(--shadow);
+    transition:.18s}
+  .inputcard:focus-within{border-color:#BFE6D8;box-shadow:0 0 0 4px #0FA37512,var(--shadow)}
+  .inputcard input{flex:1;border:0;outline:none;font:inherit;color:var(--ink);background:transparent;
+    padding:9px 0;min-width:0}
+  .inputcard input::placeholder{color:var(--ink3)}
+  .go{border:0;border-radius:10px;background:var(--green);color:#fff;font:inherit;font-weight:600;
+    padding:10px 20px;cursor:pointer;transition:.16s;white-space:nowrap}
+  .go:hover:not(:disabled){background:var(--green-d)}
+  .go:disabled{opacity:.55;cursor:default}
+
+  /* 选项 */
+  .opts{display:flex;align-items:flex-start;gap:9px;margin-top:-8px}
+  .switch{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;flex:none;padding-top:1px}
+  .switch input{display:none}
+  .track{width:32px;height:19px;border-radius:99px;background:#DFE3E9;position:relative;transition:.18s;flex:none}
+  .track::after{content:"";position:absolute;top:2.5px;left:2.5px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:.18s}
+  .switch input:checked + .track{background:var(--green)}
+  .switch input:checked + .track::after{left:15.5px}
+  .opts .txt{font-size:13px;color:var(--ink2)}
+  .opts .hint{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:1px}
+
+  /* 步骤 */
+  .steps{display:none;align-items:center;padding:2px 0}
+  .steps.on{display:flex}
+  .step{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink3)}
+  .step .dot{width:6px;height:6px;border-radius:50%;background:#D8DCE3;transition:.2s}
+  .step.now{color:var(--green);font-weight:500}
+  .step.now .dot{background:var(--green);box-shadow:0 0 0 4px #0FA3751F}
+  .step.done{color:var(--ink2)} .step.done .dot{background:var(--green);opacity:.5}
+  .sep{width:22px;height:1px;background:var(--line2);margin:0 10px}
+
+  /* 结果 */
+  .card{display:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;box-shadow:var(--shadow)}
+  .card.on{display:block}
+  .card h3{margin:0 0 3px;font-size:14.5px;font-weight:600}
+  .card p{margin:0;color:var(--ink3);font-size:12.5px}
+  .acts{display:flex;gap:9px;margin-top:16px}
+  .btn{border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:500;cursor:pointer;transition:.16s}
+  .btn.primary{background:var(--green);color:#fff} .btn.primary:hover{background:var(--green-d)}
+  .btn.plain{background:#F2F4F7;color:var(--ink2)} .btn.plain:hover{background:#EAEDF1}
+
+  /* 日志 */
+  .logbox{flex:none;padding:0 28px 16px}
+  .loghead{display:inline-flex;align-items:center;gap:5px;color:var(--ink3);font-size:12px;
+    cursor:pointer;padding:4px 0}
+  .loghead:hover{color:var(--ink2)}
+  .log{display:none;margin-top:6px;max-height:132px;overflow-y:auto;background:#FBFCFD;
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    font:11.5px/1.75 ui-monospace,"SF Mono",Menlo,monospace;color:#6C7482;white-space:pre-wrap}
+  .log.on{display:block}
+  .log .err{color:var(--red)} .log .ok{color:var(--green)} .log .step{color:var(--blue)}
+
+  /* 设置 */
+  .mask{position:fixed;inset:0;background:rgba(20,24,32,.26);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:60}
+  .mask.on{display:flex}
+  .sheet{width:560px;max-height:86vh;overflow-y:auto;background:var(--surface);border-radius:20px;
+    padding:26px 28px;box-shadow:0 24px 64px -16px rgba(16,24,40,.28)}
+  .sheet h2{margin:0 0 5px;font-size:17px;font-weight:600}
+  .sheet .sub{color:var(--ink3);font-size:12.5px;margin-bottom:22px}
+
+  .label{font-size:12.5px;color:var(--ink2);margin:20px 0 9px;font-weight:500}
+  .seg{display:flex;background:#F2F4F7;border-radius:11px;padding:3px;gap:3px}
+  .seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px 10px;font:inherit;
+    font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s}
+  .seg button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(16,24,40,.1)}
+  .seg .small{display:block;font-size:11px;color:var(--ink3);font-weight:400;margin-top:1px}
+  .note{font-size:12px;color:var(--ink3);margin-top:7px;line-height:1.55}
+
+  .field{width:100%;background:var(--surface);border:1px solid var(--line2);border-radius:10px;
+    padding:10px 12px;font:inherit;color:var(--ink);outline:none;transition:.16s}
+  .field:focus{border-color:#BFE6D8;box-shadow:0 0 0 3px #0FA37512}
+
+  /* 自定义下拉 */
+  .select{position:relative;user-select:none}
+  .sel-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;
+    font:inherit;color:var(--ink);cursor:pointer;transition:.16s;text-align:left}
+  .sel-btn:hover{border-color:#D5D9E0}
+  .select.open .sel-btn{border-color:#BFE6D8;box-shadow:0 0 0 3px #0FA37512}
+  .chev{width:12px;height:12px;flex:none;color:var(--ink3);transition:.18s}
+  .select.open .chev{transform:rotate(180deg)}
+  .menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:5px;box-shadow:var(--shadow-lg);
+    max-height:230px;overflow-y:auto;z-index:80;display:none}
+  .select.open .menu{display:block}
+  .opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;
+    border-radius:8px;font-size:13px;color:var(--ink);cursor:pointer;transition:.12s}
+  .opt:hover{background:#F4F6F8}
+  .opt.sel{background:var(--green-tint);color:var(--green-d);font-weight:500}
+  .opt small{color:var(--ink3);font-size:11px;font-weight:400}
+  .opt .tick{color:var(--green);font-size:12px;opacity:0}
+  .opt.sel .tick{opacity:1}
+
+  .select.combo{display:flex;align-items:center;border:1px solid var(--line2);border-radius:10px;
+    background:var(--surface);padding:0 5px 0 12px;transition:.16s}
+  .select.combo:focus-within{border-color:#BFE6D8;box-shadow:0 0 0 3px #0FA37512}
+  .select.combo input{flex:1;min-width:0;border:0;outline:none;background:transparent;
+    font:inherit;color:var(--ink);padding:10px 0}
+  .select.combo input::placeholder{color:var(--ink3)}
+  .chev-btn{border:0;background:transparent;color:var(--ink3);cursor:pointer;padding:6px;
+    border-radius:7px;display:flex;transition:.16s}
+  .chev-btn:hover{background:#F2F4F7}
+  .select.combo.open .chev{transform:rotate(180deg)}
+
+  .keyrow{position:relative}
+  .keyrow .field{padding-right:42px}
+  .eye{position:absolute;right:5px;top:5px;width:30px;height:30px;border:0;border-radius:7px;
+    background:transparent;color:var(--ink3);cursor:pointer}
+  .eye:hover{background:#F2F4F7}
+  details{margin-top:14px}
+  summary{cursor:pointer;color:var(--ink3);font-size:12.5px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";font-size:10px}
+  details[open] summary::before{content:"▾ "}
+  details[open] summary{margin-bottom:8px}
+  .testrow{display:flex;align-items:center;gap:11px;margin-top:16px}
+  .tip{font-size:12px;color:var(--ink3)}
+  .tip.ok{color:var(--green)} .tip.err{color:var(--red)}
+  .foot{display:flex;justify-content:flex-end;gap:9px;margin-top:26px}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="mark">文</div>
+  <span class="name">视频转文稿</span>
+  <span id="modeBadge" class="pill">本地运行</span>
+  <div class="grow"></div>
+  <button id="gear" class="gear" title="设置">⚙</button>
+</div>
+
+<div class="wrap">
+  <div class="col">
+    <div class="hero">
+      <h1>把视频里的声音，提取成文字</h1>
+      <p>粘贴抖音链接或本地文件路径。默认只做文字提取，快、离线、不上传。</p>
+    </div>
+
+    <div class="inputcard">
+      <input id="link" type="text" placeholder="https://v.douyin.com/xxxxx/   或   /Users/…/video.mp4" />
+      <button id="run" class="go">开始提取</button>
+    </div>
+
+    <div class="opts">
+      <label class="switch">
+        <input id="polish" type="checkbox" />
+        <span class="track"></span>
+      </label>
+      <span class="txt">
+        用 AI 整理成文章
+        <span class="hint">不勾选＝只提取文字（约 40 秒）。勾选后由大模型补标点、分段、纠错并生成摘要（2-4 分钟）。</span>
+      </span>
+    </div>
+
+    <div id="steps" class="steps">
+      <div class="step" data-s="1"><i class="dot"></i>获取视频</div>
+      <div class="sep"></div>
+      <div class="step" data-s="2"><i class="dot"></i>提取文字</div>
+      <div class="sep"></div>
+      <div class="step" data-s="3"><i class="dot"></i>术语纠错</div>
+      <div class="sep"></div>
+      <div class="step" data-s="4"><i class="dot"></i>排版</div>
+    </div>
+
+    <div id="result" class="card">
+      <h3 id="rTitle">已完成</h3>
+      <p id="rMeta"></p>
+      <div class="acts">
+        <button class="btn primary" id="openDoc">打开文稿</button>
+        <button class="btn plain" id="openFolder">在访达中显示</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="logbox">
+  <div class="loghead" id="logToggle">▸ 运行日志</div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="mask" id="settings">
+  <div class="sheet">
+    <h2>设置</h2>
+    <div class="sub">视频始终在本机转写。只有勾选「用 AI 整理成文章」时，文字才会发给你选的模型。</div>
+
+    <div class="label">AI 整理方式</div>
+    <div class="seg">
+      <button id="cLocal" data-backend="local">本地模型<span class="small">免费 · 离线</span></button>
+      <button id="cApi" data-backend="api">云端模型<span class="small">更快 · 更准</span></button>
+    </div>
+
+    <div id="cloudBox" style="display:none">
+      <div class="label">服务商</div>
+      <div class="select" id="providerSel">
+        <button class="sel-btn" type="button">
+          <span class="sel-text">DeepSeek</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu"></div>
+      </div>
+
+      <div class="label">API Key</div>
+      <div class="keyrow">
+        <input id="apiKey" class="field" type="password" placeholder="粘贴你的 API Key" />
+        <button class="eye" id="eye">👁</button>
+      </div>
+      <div class="note" id="keyHint">只保存在本机 config.json（权限 600），不会上传。</div>
+
+      <div class="label">模型</div>
+      <div class="select combo" id="modelSel">
+        <input id="modelInput" type="text" placeholder="选择或直接输入模型名" autocomplete="off" spellcheck="false" />
+        <button class="chev-btn" type="button" title="常用模型">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu"></div>
+      </div>
+      <div class="note">可以从列表里挑，也可以直接输入服务商文档里的任意模型名。</div>
+
+      <details>
+        <summary>自定义接口地址</summary>
+        <input id="baseUrl" class="field" placeholder="https://…/v1" />
+        <div class="note">支持任何 OpenAI 兼容接口，例如本机 Ollama：http://localhost:11434/v1</div>
+      </details>
+
+      <div class="testrow">
+        <button class="btn plain" id="testBtn">测试连接</button>
+        <span class="tip" id="testTip"></span>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn plain" id="cancel">取消</button>
+      <button class="btn primary" id="save">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onerror = function (m, src, line) {
+  try { window.__TAURI__.core.invoke("ui_ready", { msg: "ERR|" + m + "|" + line }); } catch (e) {}
+};
+const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
+const $ = (id) => document.getElementById(id);
+
+const PROVIDERS = {
+  deepseek:   { name: "DeepSeek",      base: "https://api.deepseek.com/v1",                       models: ["deepseek-chat"] },
+  zhipu:      { name: "智谱 GLM",      base: "https://open.bigmodel.cn/api/paas/v4",              models: ["glm-4-flash", "glm-4-plus"] },
+  qwen:       { name: "通义千问",      base: "https://dashscope.aliyuncs.com/compatible-mode/v1", models: ["qwen-plus", "qwen-turbo"] },
+  moonshot:   { name: "月之暗面 Kimi", base: "https://api.moonshot.cn/v1",                        models: ["moonshot-v1-8k"] },
+  siliconflow:{ name: "硅基流动",      base: "https://api.siliconflow.cn/v1",                     models: ["Qwen/Qwen2.5-7B-Instruct"] },
+  openai:     { name: "OpenAI",        base: "https://api.openai.com/v1",                         models: ["gpt-4o-mini"] },
+  openrouter: { name: "OpenRouter",    base: "https://openrouter.ai/api/v1",                      models: ["anthropic/claude-3.5-sonnet"] },
+  custom:     { name: "自定义接口",    base: "",                                                  models: [] },
+};
+
+let state = { backend: "local", provider: "deepseek", model: "", baseUrl: "", keySet: false };
+let lastMd = "";
+let selProvider = "deepseek";
+let selModel = "";
+
+/* ---------- 通用 ---------- */
+function log(line, cls) {
+  const el = $("log");
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  d.textContent = line;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+function setStep(n, mode) {
+  document.querySelectorAll(".step").forEach((el) => {
+    const s = +el.dataset.s;
+    el.classList.toggle("now", s === n && mode === "now");
+    el.classList.toggle("done", s < n || (s === n && mode === "done"));
+  });
+  $("steps").classList.add("on");
+}
+function setMode(backend) {
+  const b = $("modeBadge");
+  b.textContent = backend === "api" ? "AI：云端模型" : "AI：本地模型";
+  b.classList.toggle("cloud", backend === "api");
+}
+
+/* ---------- 自定义下拉 ---------- */
+function closeAllSelects(except) {
+  document.querySelectorAll(".select.open").forEach((el) => {
+    if (el !== except) el.classList.remove("open");
+  });
+}
+function renderSelect(el, items, current, onPick) {
+  const menu = el.querySelector(".menu");
+  const text = el.querySelector(".sel-text");
+  menu.innerHTML = "";
+  items.forEach((it) => {
+    const row = document.createElement("div");
+    row.className = "opt" + (it.value === current ? " sel" : "");
+    row.innerHTML = `<span>${it.label}${it.sub ? `<small> ${it.sub}</small>` : ""}</span><span class="tick">✓</span>`;
+    row.addEventListener("click", (e) => {
+      e.stopPropagation();
+      text.textContent = it.label;
+      el.classList.remove("open");
+      onPick(it.value);
+    });
+    menu.appendChild(row);
+  });
+  if (!items.length) menu.innerHTML = `<div class="opt"><span>（无可选项）</span></div>`;
+  const cur = items.find((i) => i.value === current);
+  if (cur) text.textContent = cur.label;
+}
+function bindSelect(el) {
+  el.querySelector(".sel-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = el.classList.toggle("open");
+    if (open) closeAllSelects(el);
+  });
+}
+document.addEventListener("click", () => closeAllSelects(null));
+
+function renderProviders() {
+  const items = Object.entries(PROVIDERS).map(([k, v]) => ({ value: k, label: v.name }));
+  renderSelect($("providerSel"), items, selProvider, (v) => {
+    selProvider = v;
+    $("baseUrl").value = PROVIDERS[v]?.base || "";
+    selModel = PROVIDERS[v]?.models?.[0] || "";
+    renderModels();
+    const det = $("baseUrl").closest("details");
+    if (v === "custom") {
+      det.open = true;                        // 自定义接口必须填地址，直接展开
+      setTimeout(() => $("baseUrl").focus(), 60);
+    }
+  });
+}
+function renderModels(filter) {
+  const base = PROVIDERS[selProvider]?.models || [];
+  const q = (filter || "").toLowerCase();
+  const list = q ? base.filter((m) => m.toLowerCase().includes(q)) : base;
+  const menu = $("modelSel").querySelector(".menu");
+  menu.innerHTML = "";
+  if (!list.length) {
+    menu.innerHTML = `<div class="opt" style="color:var(--ink3);cursor:default">
+      <span>${base.length ? "没有匹配的预设，可直接输入" : "直接输入模型名即可"}</span></div>`;
+    return;
+  }
+  list.forEach((m) => {
+    const row = document.createElement("div");
+    row.className = "opt" + (m === $("modelInput").value.trim() ? " sel" : "");
+    row.innerHTML = `<span>${m}</span><span class="tick">✓</span>`;
+    row.addEventListener("click", (e) => {
+      e.stopPropagation();
+      $("modelInput").value = m;
+      selModel = m;
+      $("modelSel").classList.remove("open");
+    });
+    menu.appendChild(row);
+  });
+}
+
+function openModelMenu() {
+  closeAllSelects($("modelSel"));
+  $("modelSel").classList.add("open");
+  renderModels($("modelInput").value.trim());
+}
+
+/* ---------- 启动 ---------- */
+(async () => {
+  try {
+    const s = JSON.parse(await invoke("get_settings"));
+    state = { backend: s.backend || "local", provider: s.provider || "deepseek",
+              model: s.model || "", baseUrl: s.base_url || "", keySet: s.key_set,
+              keyMasked: s.key_masked };
+    setMode(state.backend);
+  } catch (e) { console.error(e); }
+})();
+
+$("run").addEventListener("click", async () => {
+  const link = $("link").value.trim();
+  if (!link) { $("link").focus(); return; }
+  $("log").textContent = "";
+  $("result").classList.remove("on");
+  $("run").disabled = true; $("link").disabled = true;
+  $("steps").classList.add("on");
+  document.querySelectorAll(".step").forEach((e) => (e.className = "step"));
+  setStep(1, "now");
+  try {
+    await invoke("start_run", { link, glossary: "", backend: "", polish: $("polish").checked });
+  } catch (e) {
+    log("启动失败: " + e, "err");
+    $("run").disabled = false; $("link").disabled = false;
+  }
+});
+$("link").addEventListener("keydown", (e) => { if (e.key === "Enter") $("run").click(); });
+
+listen("v2t-log", (e) => {
+  const t = e.payload;
+  log(t, /失败|错误|Error/.test(t) ? "err" : (/^\[v2t\]/.test(t) ? "step" : ""));
+  if (/抖音 ID|下载/.test(t)) setStep(1, "now");
+  if (/ASR 转写中/.test(t)) { setStep(1, "done"); setStep(2, "now"); }
+  if (/转写完成/.test(t)) { setStep(2, "done"); setStep(3, "now"); }
+  if (/术语纠错/.test(t)) setStep(3, "done");
+  if (/深度整理/.test(t)) { setStep(3, "done"); setStep(4, "now"); }
+  if (/文稿:/.test(t)) {
+    lastMd = t.replace(/^.*文稿:\s*/, "").trim();
+    setStep(4, "done");
+    $("result").classList.add("on");
+    $("rTitle").textContent = lastMd.split("/").pop().replace(/\.md$/, "");
+    $("rMeta").textContent = "已保存到 out 目录";
+  }
+});
+listen("v2t-done", (e) => {
+  $("run").disabled = false; $("link").disabled = false;
+  if (e.payload.code === 0) { setStep(4, "done"); $("result").classList.add("on"); }
+  else log("处理失败，退出码 " + e.payload.code, "err");
+});
+
+$("openDoc").addEventListener("click", () => lastMd && invoke("open_path", { path: lastMd }));
+$("openFolder").addEventListener("click", () => invoke("open_out_dir"));
+$("logToggle").addEventListener("click", () => {
+  const on = $("log").classList.toggle("on");
+  $("logToggle").textContent = (on ? "▾" : "▸") + " 运行日志";
+});
+
+/* ---------- 设置 ---------- */
+function applyBackendUI() {
+  $("cLocal").classList.toggle("on", state.backend === "local");
+  $("cApi").classList.toggle("on", state.backend === "api");
+  $("cloudBox").style.display = state.backend === "api" ? "block" : "none";
+}
+
+$("gear").addEventListener("click", () => {
+  selProvider = state.provider || "deepseek";
+  selModel = state.model || (PROVIDERS[selProvider]?.models?.[0] || "");
+  renderProviders();
+  $("modelInput").value = selModel;
+  renderModels();
+  $("baseUrl").value = state.baseUrl || PROVIDERS[selProvider]?.base || "";
+  $("apiKey").value = "";
+  $("apiKey").placeholder = state.keySet
+    ? "已保存（" + state.keyMasked + "），留空不修改" : "粘贴你的 API Key";
+  $("testTip").textContent = ""; $("testTip").className = "tip";
+  applyBackendUI();
+  $("settings").classList.add("on");
+});
+$("cancel").addEventListener("click", () => $("settings").classList.remove("on"));
+$("settings").addEventListener("click", (e) => {
+  if (e.target.id === "settings") $("settings").classList.remove("on");
+});
+document.querySelectorAll(".seg button").forEach((el) => {
+  el.addEventListener("click", () => { state.backend = el.dataset.backend; applyBackendUI(); });
+});
+$("eye").addEventListener("click", () => {
+  const k = $("apiKey"); k.type = k.type === "password" ? "text" : "password";
+});
+$("testBtn").addEventListener("click", async () => {
+  $("testTip").className = "tip"; $("testTip").textContent = "测试中…";
+  try {
+    await saveSettings(true);
+    const [status, secs, msg] = (await invoke("test_backend")).split("|");
+    if (status === "OK") {
+      $("testTip").className = "tip ok";
+      $("testTip").textContent = `连接成功（${secs}s）：${msg}`;
+    } else {
+      $("testTip").className = "tip err";
+      $("testTip").textContent = `失败：${msg}`;
+    }
+  } catch (e) {
+    $("testTip").className = "tip err"; $("testTip").textContent = "测试出错：" + e;
+  }
+});
+
+async function saveSettings(silent) {
+  if (selProvider === "custom" && !$("baseUrl").value.trim()) {
+    const det = $("baseUrl").closest("details"); det.open = true;
+    $("testTip").className = "tip err";
+    $("testTip").textContent = "请先填写接口地址，例如 https://api.deepseek.com/v1";
+    $("baseUrl").focus();
+    return;
+  }
+  const payload = {
+    backend: state.backend,
+    provider: selProvider,
+    base_url: $("baseUrl").value.trim() || (PROVIDERS[selProvider]?.base || ""),
+    model: ($("modelInput").value || selModel || "").trim(),
+    api_key: $("apiKey").value.trim(),
+  };
+  const s = JSON.parse(await invoke("save_settings", { payload: JSON.stringify(payload) }));
+  state = { ...state, backend: s.backend, provider: s.provider || selProvider,
+            model: s.model, baseUrl: s.base_url, keySet: s.key_set, keyMasked: s.key_masked };
+  setMode(state.backend);
+  if (!silent) { $("settings").classList.remove("on"); $("apiKey").value = ""; }
+}
+$("save").addEventListener("click", () => saveSettings(false));
+bindSelect($("providerSel"));
+$("modelSel").querySelector(".chev-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if ($("modelSel").classList.contains("open")) $("modelSel").classList.remove("open");
+  else openModelMenu();
+});
+$("modelInput").addEventListener("focus", openModelMenu);
+$("modelInput").addEventListener("input", () => {
+  selModel = $("modelInput").value.trim();
+  renderModels(selModel);
+  $("modelSel").classList.add("open");
+});
+$("modelInput").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("modelSel").classList.remove("open");
+  if (e.key === "Enter") { selModel = $("modelInput").value.trim(); $("modelSel").classList.remove("open"); }
+});
+
+invoke("ui_ready", { msg: "OK|" + document.body.scrollWidth + "x" + document.body.scrollHeight }).catch(() => {});
+</script>
+</body>
+</html>

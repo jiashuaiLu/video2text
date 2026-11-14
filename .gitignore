@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 模型与中间产物（体积大，不入库）
+work/
+out/
+*.wav
+*.mp4
+*.mp3
+*.m4a
+
+# 本机配置（可能含 API Key）
+config.json
+dy_cookies.txt
+*.cookies.txt
+
+# 桌面端构建产物
+desktop/node_modules/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+*.app
+*.zip
+*.dmg
+
+# macOS
+.DS_Store
