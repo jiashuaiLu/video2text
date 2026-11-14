@@ -396,7 +396,8 @@ function checkRow(ok, label, why) {
 }
 
 async function probe() {
-  const env = JSON.parse(await invoke("check_env"));
+  const raw = await invoke("check_env");
+  const env = typeof raw === "string" ? JSON.parse(raw) : (raw || {});
   const needBoot = await invoke("bootstrap_needed");
   return { ...env, needBoot };
 }
@@ -437,10 +438,17 @@ async function showSetup() {
 }
 
 async function ensureReady() {
-  const s = await probe();
-  if (s.python3 && s.ffmpeg && !s.needBoot) return true;
-  await showSetup();
-  return false;
+  try {
+    const s = await probe();
+    if (s.python3 && s.ffmpeg && !s.needBoot) return true;
+    await showSetup();
+    return false;
+  } catch (e) {
+    log("环境检测失败：" + e, "err");
+    $("log").classList.add("on");
+    $("logToggle").textContent = "▾ 运行日志";
+    return false;
+  }
 }
 
 $("setupRecheck").addEventListener("click", async () => {
@@ -553,8 +561,10 @@ function openModelMenu() {
               keyMasked: s.key_masked };
     setMode(state.backend);
   } catch (e) { console.error(e); }
-  const s = await probe();
-  if (!(s.python3 && s.ffmpeg && !s.needBoot)) showSetup();
+  try {
+    const s = await probe();
+    if (!(s.python3 && s.ffmpeg && !s.needBoot)) showSetup();
+  } catch (e) { console.error("probe failed", e); }
 })();
 
 $("run").addEventListener("click", async () => {
