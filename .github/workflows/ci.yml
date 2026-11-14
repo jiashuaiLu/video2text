@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python 语法与规则测试
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 语法检查
+        run: python -m compileall -q bin
+
+      - name: 安装轻量依赖
+        run: |
+          python -m pip install -q --upgrade pip
+          python -m pip install -q pypinyin
+
+      - name: 排版规则测试
+        run: python tests/test_formatmd.py
+
+      - name: 术语纠错测试
+        run: python tests/test_glossary.py
+
+  frontend:
+    name: 桌面端前端静态检查
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 检查 HTML 基本结构
+        run: |
+          test -f desktop/src/index.html
+          grep -q "__TAURI__" desktop/src/index.html
+          grep -q "start_run" desktop/src/index.html
+          echo "前端结构 OK"

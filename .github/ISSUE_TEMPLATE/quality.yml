@@ -1,0 +1,31 @@
+name: 转写质量问题
+description: 错字、漏句、专有名词识别错
+labels: ["quality"]
+body:
+  - type: input
+    id: link
+    attributes:
+      label: 视频链接
+    validations:
+      required: true
+  - type: input
+    id: time
+    attributes:
+      label: 出错位置（时间点）
+      placeholder: 03:24
+    validations:
+      required: true
+  - type: textarea
+    id: diff
+    attributes:
+      label: 实际 vs 正确
+      placeholder: |
+        实际：这是乌兹别克斯坦开发者的真实曲线
+        正确：这是乌兹别克斯坦开发者的真实案例
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 当时的模式
+      options: ["只提取文字", "AI 整理成文章"]
