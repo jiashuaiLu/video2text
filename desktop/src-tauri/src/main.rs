@@ -4,6 +4,24 @@ use std::process::{Command, Stdio};
 
 use tauri::{Emitter, Manager, Window};
 
+/// GUI 启动的 App 只拿到 /usr/bin:/bin:/usr/sbin:/sbin，
+/// 这里把 Homebrew 等常见路径补进 PATH，保证 python / ffmpeg 能被找到。
+fn ensure_path() {
+    const EXTRA: [&str; 3] = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/homebrew/sbin"];
+    let cur = std::env::var("PATH").unwrap_or_default();
+    let mut parts: Vec<String> = cur
+        .split(':')
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect();
+    for e in EXTRA {
+        if Path::new(e).exists() && !parts.iter().any(|p| p == e) {
+            parts.push(e.to_string());
+        }
+    }
+    std::env::set_var("PATH", parts.join(":"));
+}
+
 fn project_root() -> PathBuf {
     // 1) 显式指定优先
     if let Ok(v) = std::env::var("V2T_ROOT") {
@@ -42,13 +60,25 @@ fn python_bin(root: &Path) -> PathBuf {
 #[tauri::command]
 fn check_env() -> serde_json::Value {
     let has = |cmd: &str, flag: &str| {
-        Command::new(cmd)
-            .arg(flag)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
+        // 先按名称找，再在 Homebrew 常见目录里找
+        for cand in [
+            cmd.to_string(),
+            format!("/opt/homebrew/bin/{cmd}"),
+            format!("/usr/local/bin/{cmd}"),
+            format!("/usr/bin/{cmd}"),
+        ] {
+            if Command::new(&cand)
+                .arg(flag)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+        false
     };
     let brew = Path::new("/opt/homebrew/bin/brew").exists()
         || Path::new("/usr/local/bin/brew").exists();
@@ -305,6 +335,9 @@ fn open_out_dir() -> Result<(), String> {
 }
 
 fn main() {
+    // GUI 启动拿不到 shell 的 PATH，先补齐再干别的
+    ensure_path();
+
     // 命令行自检入口：video2text --check-env
     if std::env::args().any(|a| a == "--check-env") {
         println!("{}", check_env());
