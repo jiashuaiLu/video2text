@@ -446,6 +446,7 @@ fn start_run(window: Window, link: String, glossary: String, backend: String, po
         if polish {
             cmd.arg("--polish");
         }
+        cmd.arg("--quiet");
 
         let mut child = match cmd.spawn() {
             Ok(c) => c,

@@ -396,6 +396,7 @@ const PKG_CMD = 'brew install python ffmpeg';
 
 let state = { backend: "local", provider: "deepseek", model: "", baseUrl: "", keySet: false };
 let lastMd = "";
+let lastCost = "";
 let selProvider = "deepseek";
 let selModel = "";
 
@@ -726,6 +727,7 @@ $("run").addEventListener("click", async () => {
   if (!(await ensureReady())) return;
   if ($("polish").checked && !(await polishReady())) { await askPolishModel(); return; }
   $("log").textContent = "";
+  lastCost = "";
   $("result").classList.remove("on");
   $("run").disabled = true; $("link").disabled = true;
   $("steps").classList.add("on");
@@ -748,12 +750,14 @@ listen("v2t-log", (e) => {
   if (/转写完成/.test(t)) { setStep(2, "done"); setStep(3, "now"); }
   if (/术语纠错/.test(t)) setStep(3, "done");
   if (/深度整理/.test(t)) { setStep(3, "done"); setStep(4, "now"); }
+  const mDone = t.match(/^完成 (\d+)s/);
+  if (mDone) lastCost = mDone[1];
   if (/文稿:/.test(t)) {
     lastMd = t.replace(/^.*文稿:\s*/, "").trim();
     setStep(4, "done");
     $("result").classList.add("on");
     $("rTitle").textContent = lastMd.split("/").pop().replace(/\.md$/, "");
-    $("rMeta").textContent = "已保存到 out 目录";
+    $("rMeta").textContent = (lastCost ? `耗时 ${lastCost} 秒 · ` : "") + "已保存到 out 目录";
   }
 });
 listen("model-progress", (e) => {
