@@ -56,6 +56,95 @@ fn python_bin(root: &Path) -> PathBuf {
     }
 }
 
+/// 递归统计目录大小（MB，跟随符号链接）
+fn dir_mb(p: &Path) -> u64 {
+    fn walk(p: &Path, acc: &mut u64) {
+        let md = match std::fs::metadata(p) { Ok(m) => m, Err(_) => return };
+        if md.is_file() { *acc += md.len(); return; }
+        if let Ok(rd) = std::fs::read_dir(p) {
+            for e in rd.flatten() { walk(&e.path(), acc); }
+        }
+    }
+    let mut n = 0u64;
+    walk(p, &mut n);
+    n / (1024 * 1024)
+}
+
+fn model_dir(root: &Path, slug: &str) -> PathBuf {
+    root.join("work/hf/hub").join(format!("models--mlx-community--{slug}"))
+}
+
+/// 模型是否已就绪
+#[tauri::command]
+fn models_status() -> serde_json::Value {
+    let root = project_root();
+    let asr = dir_mb(&model_dir(&root, "Qwen3-ASR-1.7B-8bit"));
+    let polish = dir_mb(&model_dir(&root, "Qwen3.5-9B-4bit"));
+    serde_json::json!({
+        "asr_mb": asr, "asr_ready": asr > 1200,
+        "polish_mb": polish, "polish_ready": polish > 3000,
+    })
+}
+
+fn do_download(kind: &str, root: PathBuf, emit: &dyn Fn(String)) -> bool {
+    let repo = match kind {
+        "asr" => "mlx-community/Qwen3-ASR-1.7B-8bit",
+        "polish" => "mlx-community/Qwen3.5-9B-4bit",
+        _ => return false,
+    };
+    let dir = model_dir(&root, if kind == "asr" { "Qwen3-ASR-1.7B-8bit" } else { "Qwen3.5-9B-4bit" });
+    // 下载依赖 huggingface_hub，必须先完成运行环境初始化
+    if !root.join(".venv/bin/python").exists() {
+        emit("请先完成「开始准备」，再下载模型".into());
+        return false;
+    }
+    let py = python_bin(&root);
+    let script = format!("from huggingface_hub import snapshot_download\nsnapshot_download('{repo}')\n");
+    let mut child = match Command::new(&py)
+        .args(["-c", &script])
+        .env("HF_HOME", root.join("work/hf"))
+        .env("HF_ENDPOINT", "https://hf-mirror.com")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(e) => { emit(format!("启动下载失败: {e}")); return false; }
+    };
+    loop {
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        emit(format!("{} MB", dir_mb(&dir)));
+        if let Ok(Some(_)) = child.try_wait() {
+            break;
+        }
+    }
+    let out = child.wait_with_output();
+    match out {
+        Ok(o) if o.status.success() => true,
+        Ok(o) => {
+            let err = String::from_utf8_lossy(&o.stderr);
+            let tail: String = err.chars().rev().take(300).collect::<String>().chars().rev().collect();
+            emit(format!("下载失败：{}", tail.replace('\n', " ")));
+            false
+        }
+        Err(_) => false,
+    }
+}
+
+/// 一键下载模型：型如 asr / polish，边下边推进度
+#[tauri::command]
+fn download_models(kind: String, window: Window) -> Result<(), String> {
+    let root = project_root();
+    std::thread::spawn(move || {
+        let w = window.clone();
+        let ok = do_download(&kind, root, &|msg| {
+            let _ = w.emit("model-progress", serde_json::json!({"kind": kind, "text": msg}));
+        });
+        let _ = window.emit("model-done", serde_json::json!({"kind": kind, "ok": ok}));
+    });
+    Ok(())
+}
+
 /// 环境自检：python3 / ffmpeg / Homebrew
 #[tauri::command]
 fn check_env() -> serde_json::Value {
@@ -338,6 +427,20 @@ fn main() {
     // GUI 启动拿不到 shell 的 PATH，先补齐再干别的
     ensure_path();
 
+    // 命令行入口：--models-status / --download-model asr
+    if std::env::args().any(|a| a == "--models-status") {
+        println!("{}", models_status());
+        return;
+    }
+    if let Some(pos) = std::env::args().position(|a| a == "--download-model") {
+        if let Some(kind) = std::env::args().nth(pos + 1) {
+            let root = project_root();
+            let ok = do_download(&kind, root, &|m| println!("  {m}"));
+            println!("结果: {}", if ok { "OK" } else { "失败" });
+            return;
+        }
+    }
+
     // 命令行自检入口：video2text --check-env
     if std::env::args().any(|a| a == "--check-env") {
         println!("{}", check_env());
@@ -364,6 +467,8 @@ fn main() {
             ui_ready,
             bootstrap_needed,
             check_env,
+            models_status,
+            download_models,
             copy_text,
             bootstrap,
             get_settings,
