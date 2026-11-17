@@ -171,6 +171,14 @@
   .cmd button{border:0;background:#242A35;color:#B8C2D4;border-radius:6px;padding:4px 10px;
     font-size:11.5px;cursor:pointer;flex:none}
   .cmd button:hover{background:#2F3745;color:#fff}
+  .modelrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .modelrow .info{flex:1;min-width:0}
+  .modelrow .t{font-size:13px}
+  .modelrow .d{font-size:11.5px;color:var(--ink3);margin-top:1px}
+  .modelrow .btn-sm{border:0;border-radius:8px;padding:6px 13px;font:inherit;font-size:12.5px;
+    background:var(--green-tint);color:var(--green-d);cursor:pointer;font-weight:500;flex:none}
+  .modelrow .btn-sm:hover{background:#DCF1EA}
+  .modelrow .btn-sm:disabled{opacity:.6;cursor:default}
 </style>
 </head>
 <body>
@@ -250,6 +258,7 @@
 
     <div id="setupChecks"></div>
     <div id="setupCmds"></div>
+    <div id="setupModels"></div>
 
     <div class="foot" style="justify-content:space-between;margin-top:22px">
       <button class="btn plain" id="setupRecheck">重新检测</button>
@@ -411,6 +420,58 @@ async function probe() {
   return { ...env, needBoot };
 }
 
+const MODEL_META = {
+  asr:    { name: "转写模型", size: "约 2.4G", desc: "开始转写必须", needMb: 1200 },
+  polish: { name: "AI 整理模型", size: "约 6.0G", desc: "只有勾选「用 AI 整理」才需要", needMb: 3000 },
+};
+
+async function renderModelsSection(envReady) {
+  const box = $("setupModels");
+  box.innerHTML = "";
+  if (!envReady) {
+    const tip = document.createElement("div");
+    tip.className = "note";
+    tip.style.marginTop = "10px";
+    tip.textContent = "先完成上面的「开始准备」，再来下载模型。";
+    box.appendChild(tip);
+    return;
+  }
+  const st = JSON.parse(await invoke("models_status"));
+  [["asr", st.asr_mb, st.asr_ready], ["polish", st.polish_mb, st.polish_ready]].forEach(([k, mb, ready]) => {
+    const meta = MODEL_META[k];
+    const row = document.createElement("div");
+    row.className = "modelrow";
+    const info = document.createElement("div");
+    info.className = "info";
+    const t = document.createElement("div");
+    t.className = "t";
+    t.textContent = `${meta.name} · ${meta.size}`;
+    const d = document.createElement("div");
+    d.className = "d";
+    d.id = "mstat-" + k;
+    d.textContent = ready ? "已就绪" : `${meta.desc}${mb > 10 ? `（已下载 ${mb} MB）` : ""}`;
+    info.append(t, d);
+
+    const btn = document.createElement("button");
+    btn.className = "btn-sm";
+    btn.id = "mbtn-" + k;
+    if (ready) {
+      btn.textContent = "✓ 已下载";
+      btn.disabled = true;
+    } else {
+      btn.textContent = "一键下载";
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "下载中…";
+        try { await invoke("download_models", { kind: k }); }
+        catch (e) { $("mstat-" + k).textContent = "下载失败：" + e; btn.disabled = false; btn.textContent = "重试"; }
+      });
+    }
+    row.append(info, btn);
+    box.appendChild(row);
+  });
+}
+
 async function showSetup() {
   const s = await probe();
   const checks = $("setupChecks");
@@ -441,6 +502,7 @@ async function showSetup() {
   $("setupSub").textContent = missing
     ? "装好后就不用再管了，之后全部离线运行。"
     : (s.needBoot ? "会在本机安装独立的运行环境（约 2-3 分钟），只做一次。" : "可以直接开始转写。");
+  await renderModelsSection(!s.needBoot && s.python3 && s.ffmpeg);
   $("setupTip").textContent = "";
   $("setup").classList.add("on");
   return !missing && !s.needBoot;
@@ -611,6 +673,19 @@ listen("v2t-log", (e) => {
     $("rMeta").textContent = "已保存到 out 目录";
   }
 });
+listen("model-progress", (e) => {
+  const { kind, mb } = e.payload;
+  const el = $("mstat-" + kind);
+  if (el) el.textContent = `下载中… ${mb} MB`;
+});
+listen("model-done", (e) => {
+  const { kind, ok } = e.payload;
+  const stat = $("mstat-" + kind);
+  const btn = $("mbtn-" + kind);
+  if (stat) stat.textContent = ok ? "✅ 已就绪" : "下载失败，可重试";
+  if (btn) { btn.disabled = ok; btn.textContent = ok ? "✓ 已下载" : "重试"; if (!ok) btn.disabled = false; }
+});
+
 listen("v2t-done", (e) => {
   const { code } = e.payload;
   if ($("setup").classList.contains("on") && $("setupGo").textContent.includes("准备")) {
