@@ -11,7 +11,7 @@ import re
 import time
 from pathlib import Path
 
-DEFAULT_MODEL = "mlx-community/Qwen2.5-7B-Instruct-4bit"
+DEFAULT_MODEL = "mlx-community/Qwen3.5-9B-4bit"
 
 PUNCT_SYSTEM = (
     "你是中文文字编辑，专门整理语音识别的原始转写稿。你的唯一任务是让文本可读，"
