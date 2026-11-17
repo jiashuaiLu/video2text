@@ -314,6 +314,8 @@ def main():
     ap.add_argument("--asr", choices=["qwen3", "whisper"], default="qwen3")
     ap.add_argument("--polish", action="store_true", help="深度整理成稿（慢，默认关闭）")
     ap.add_argument("--no-format", action="store_true", help="只转写，不做规则排版")
+    ap.add_argument("--quiet", action="store_true",
+                    help="只输出进度行，不打印分隔线和正文预览（供图形界面调用）")
     ap.add_argument("--polish-only", metavar="TXT", help="只整理已有转写稿")
     ap.add_argument("--glossary", default="", help="术语表，分号分隔，如 A=B,C;D")
     ap.add_argument("--title", default="")
@@ -447,15 +449,17 @@ def main():
             meta=f"> 时长 {int(dur // 60)}分{int(dur % 60)}秒 · 来源 {src}")
 
     if not args.polish:
-        print("\n" + "=" * 56)
         tail = " + 规则排版" if (md.exists() and not args.no_format) else ""
+        if not args.quiet:
+            print("\n" + "=" * 56)
         print(f"完成 {time.time() - t0:.0f}s（转写 + 术语纠错{tail}）")
         if md.exists() and not args.no_format:
             print(f"文稿: {md}")
         print(f"原文: {txt}")
         print(f"字幕: {srt_path}")
-        print("=" * 56)
-        print(raw[:400] + "…")
+        if not args.quiet:
+            print("=" * 56)
+            print(raw[:400] + "…")
         return
 
     # 深度整理
@@ -465,10 +469,13 @@ def main():
         f"# {title}\n\n- 来源: {src}\n- 时长: {int(dur // 60)}分{int(dur % 60)}秒\n"
         f"- 字数: {len(re.sub(r'\\s', '', body))}\n- 链路: Qwen3-ASR + {llm.describe(cfg)}\n\n"
         f"{summary}## 正文\n\n{body}\n", encoding="utf-8")
-    print("\n" + "=" * 56)
-    print(f"完成 {time.time() - t0:.0f}s（深度整理）\n文稿: {md}")
-    print("=" * 56)
-    print(body[:400] + "…")
+    if not args.quiet:
+        print("\n" + "=" * 56)
+    print(f"完成 {time.time() - t0:.0f}s（深度整理）")
+    print(f"文稿: {md}")
+    if not args.quiet:
+        print("=" * 56)
+        print(body[:400] + "…")
 
 
 if __name__ == "__main__":
