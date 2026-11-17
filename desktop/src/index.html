@@ -271,6 +271,37 @@
   </div>
 </div>
 
+<!-- 选择整理方式 -->
+<div class="mask" id="pick">
+  <div class="sheet" style="width:520px">
+    <h2>用哪种模型来整理？</h2>
+    <div class="sub">不选也行——不整理时只做文字提取，不需要任何模型。</div>
+
+    <div class="choice" id="pickCloud" style="border:1px solid var(--line2);border-radius:12px;padding:14px 16px;cursor:pointer;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <b style="font-size:13.5px">云端模型</b>
+        <span style="font-size:11px;color:var(--green);background:var(--green-tint);padding:2px 7px;border-radius:99px">推荐</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px">
+        更快更准，不占硬盘。需要你自己的 API Key（DeepSeek 单篇约几分钱）
+      </div>
+    </div>
+
+    <div class="choice" id="pickLocal" style="border:1px solid var(--line2);border-radius:12px;padding:14px 16px;cursor:pointer">
+      <b style="font-size:13.5px">本地模型</b>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px">
+        免费、完全离线，但要下载 6GB，速度慢一些（一篇约 3 分钟）
+      </div>
+      <div id="pickLocalStat" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div>
+    </div>
+
+    <div class="foot" style="justify-content:space-between">
+      <button class="btn plain" id="pickSkip">不整理了</button>
+      <button class="btn plain" id="pickCancel">稍后决定</button>
+    </div>
+  </div>
+</div>
+
 <!-- 设置 -->
 <div class="mask" id="settings">
   <div class="sheet">
@@ -422,7 +453,7 @@ async function probe() {
 
 const MODEL_META = {
   asr:    { name: "转写模型", size: "约 2.4G", desc: "开始转写必须", needMb: 1200 },
-  polish: { name: "AI 整理模型", size: "约 6.0G", desc: "只有勾选「用 AI 整理」才需要", needMb: 3000 },
+  polish: { name: "本地 AI 整理模型", size: "约 6.0G", desc: "可选。装了可离线整理；不想占空间就用云端模型", needMb: 3000 },
 };
 
 async function renderModelsSection(envReady) {
@@ -548,6 +579,40 @@ $("setupGo").addEventListener("click", async () => {
   }
 });
 
+/* ---------- 整理模型选择 ---------- */
+async function polishReady() {
+  try {
+    const s = JSON.parse(await invoke("get_settings"));
+    if (s.backend === "api") return !!s.key_set;
+    const m = JSON.parse(await invoke("models_status"));
+    return !!m.polish_ready;
+  } catch (e) { return false; }
+}
+
+async function askPolishModel() {
+  const st = JSON.parse(await invoke("models_status"));
+  const localReady = !!st.polish_ready;
+  $("pickLocalStat").textContent = localReady ? "✅ 已经下载好了" : "尚未下载";
+  $("pick").classList.add("on");
+  return new Promise((resolve) => {
+    const done = (v) => { $("pick").classList.remove("on"); resolve(v); };
+    $("pickCloud").onclick = () => { done(false); openSettings("api"); };
+    $("pickLocal").onclick = async () => {
+      if (localReady) {
+        await invoke("save_settings", { payload: JSON.stringify({ backend: "local" }) });
+        setMode("local");
+        done(false);
+        return;
+      }
+      $("pickLocalStat").textContent = "下载中…";
+      try { await invoke("download_models", { kind: "polish" }); }
+      catch (e) { $("pickLocalStat").textContent = "下载失败：" + e; return; }
+    };
+    $("pickSkip").onclick = () => { $("polish").checked = false; done(false); };
+    $("pickCancel").onclick = () => done(false);
+  });
+}
+
 /* ---------- 自定义下拉 ---------- */
 function closeAllSelects(except) {
   document.querySelectorAll(".select.open").forEach((el) => { if (el !== except) el.classList.remove("open"); });
@@ -638,10 +703,15 @@ function openModelMenu() {
   } catch (e) { console.error("probe failed", e); }
 })();
 
+$("polish").addEventListener("change", async () => {
+  if ($("polish").checked && !(await polishReady())) await askPolishModel();
+});
+
 $("run").addEventListener("click", async () => {
   const link = $("link").value.trim();
   if (!link) { $("link").focus(); return; }
   if (!(await ensureReady())) return;
+  if ($("polish").checked && !(await polishReady())) { await askPolishModel(); return; }
   $("log").textContent = "";
   $("result").classList.remove("on");
   $("run").disabled = true; $("link").disabled = true;
@@ -720,7 +790,8 @@ function applyBackendUI() {
   $("cApi").classList.toggle("on", state.backend === "api");
   $("cloudBox").style.display = state.backend === "api" ? "block" : "none";
 }
-$("gear").addEventListener("click", () => {
+function openSettings(forceBackend) {
+  if (forceBackend) state.backend = forceBackend;
   selProvider = state.provider || "deepseek";
   selModel = state.model || (PROVIDERS[selProvider]?.models?.[0] || "");
   renderProviders();
@@ -732,7 +803,8 @@ $("gear").addEventListener("click", () => {
   $("testTip").textContent = ""; $("testTip").className = "tip";
   applyBackendUI();
   $("settings").classList.add("on");
-});
+}
+$("gear").addEventListener("click", () => openSettings());
 $("cancel").addEventListener("click", () => $("settings").classList.remove("on"));
 $("settings").addEventListener("click", (e) => { if (e.target.id === "settings") $("settings").classList.remove("on"); });
 document.querySelectorAll(".seg button").forEach((el) => {
