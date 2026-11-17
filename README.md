@@ -8,6 +8,21 @@
 链接 → 抓流 → 音频 → Qwen3-ASR 转写 → 术语纠错 → 排版 → Markdown + SRT
 ```
 
+## 界面
+
+<p align="center">
+  <img src="docs/images/before.jpg" width="640" alt="打开界面">
+  <br/>
+  <sub>打开：一个输入框。默认只提取文字，不碰任何大模型</sub>
+</p>
+
+<p align="center">
+  <img src="docs/images/after.jpg" width="640" alt="转写完成">
+  <br/>
+  <sub>完成：四步进度 + 结果卡片，一键打开文稿或定位文件</sub>
+</p>
+
+
 ## 它解决什么问题
 
 | | 一般工具 | v2t |
