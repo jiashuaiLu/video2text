@@ -74,16 +74,37 @@ fn model_dir(root: &Path, slug: &str) -> PathBuf {
     root.join("work/hf/hub").join(format!("models--mlx-community--{slug}"))
 }
 
-/// 模型是否已就绪
+/// 模型是否已就绪（用 huggingface_hub 校验文件完整性，避免体积误判）
 #[tauri::command]
 fn models_status() -> serde_json::Value {
     let root = project_root();
-    let asr = dir_mb(&model_dir(&root, "Qwen3-ASR-1.7B-8bit"));
-    let polish = dir_mb(&model_dir(&root, "Qwen3.5-9B-4bit"));
-    serde_json::json!({
-        "asr_mb": asr, "asr_ready": asr > 1200,
-        "polish_mb": polish, "polish_ready": polish > 3000,
-    })
+    if !root.join(".venv/bin/python").exists() {
+        return serde_json::json!({"asr_ready": false, "polish_ready": false, "env_missing": true});
+    }
+    let script = r#"
+import json
+from huggingface_hub import snapshot_download
+out = {}
+for k, repo in (("asr", "mlx-community/Qwen3-ASR-1.7B-8bit"),
+                ("polish", "mlx-community/Qwen3.5-9B-4bit")):
+    try:
+        snapshot_download(repo, local_files_only=True)
+        out[k + "_ready"] = True
+    except Exception:
+        out[k + "_ready"] = False
+print(json.dumps(out))
+"#;
+    let out = Command::new(python_bin(&root))
+        .args(["-c", script])
+        .env("HF_HOME", root.join("work/hf"))
+        .output();
+    match out {
+        Ok(o) if o.status.success() => {
+            let txt = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            serde_json::from_str(&txt).unwrap_or(serde_json::json!({"asr_ready": false, "polish_ready": false}))
+        }
+        _ => serde_json::json!({"asr_ready": false, "polish_ready": false}),
+    }
 }
 
 fn do_download(kind: &str, root: PathBuf, emit: &dyn Fn(String)) -> bool {

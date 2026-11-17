@@ -437,7 +437,7 @@ async function renderModelsSection(envReady) {
     return;
   }
   const st = JSON.parse(await invoke("models_status"));
-  [["asr", st.asr_mb, st.asr_ready], ["polish", st.polish_mb, st.polish_ready]].forEach(([k, mb, ready]) => {
+  [["asr", 0, st.asr_ready], ["polish", 0, st.polish_ready]].forEach(([k, mb, ready]) => {
     const meta = MODEL_META[k];
     const row = document.createElement("div");
     row.className = "modelrow";
@@ -449,7 +449,7 @@ async function renderModelsSection(envReady) {
     const d = document.createElement("div");
     d.className = "d";
     d.id = "mstat-" + k;
-    d.textContent = ready ? "已就绪" : `${meta.desc}${mb > 10 ? `（已下载 ${mb} MB）` : ""}`;
+    d.textContent = ready ? "✅ 已就绪" : meta.desc;
     info.append(t, d);
 
     const btn = document.createElement("button");
