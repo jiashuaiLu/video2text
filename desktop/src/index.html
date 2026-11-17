@@ -353,6 +353,19 @@
       </div>
     </div>
 
+    <div id="localModelBox" style="display:none">
+      <div class="label">本地整理模型</div>
+      <div class="modelrow" style="border-top:0;padding-top:0">
+        <div class="info">
+          <div class="t" id="lmName">Qwen3.5-9B</div>
+          <div class="d" id="lmStat">检测中…</div>
+        </div>
+        <button class="btn-sm" id="lmDelete" style="border:0;border-radius:8px;padding:6px 13px;
+          font:inherit;font-size:12.5px;background:#FDECEC;color:#C0393F;cursor:pointer;font-weight:500">删除</button>
+      </div>
+      <div class="note">删掉不影响转写，只是以后用「本地整理」需要重新下载。改用云端模型则永久不需要它。</div>
+    </div>
+
     <div class="foot">
       <button class="btn plain" id="cancel">取消</button>
       <button class="btn primary" id="save">保存</button>
@@ -802,8 +815,42 @@ function openSettings(forceBackend) {
   $("apiKey").placeholder = state.keySet ? "已保存（" + state.keyMasked + "），留空不修改" : "粘贴你的 API Key";
   $("testTip").textContent = ""; $("testTip").className = "tip";
   applyBackendUI();
+  refreshLocalModel();
   $("settings").classList.add("on");
 }
+
+async function refreshLocalModel() {
+  try {
+    const st = JSON.parse(await invoke("models_status"));
+    const box = $("localModelBox");
+    const stat = $("lmStat");
+    const del = $("lmDelete");
+    if (!st.polish_ready) {
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+    stat.textContent = `已下载 · 占用约 ${((st.polish_mb || 0) / 1000).toFixed(1)} GB`;
+    del.disabled = false;
+    del.textContent = "删除";
+    del.onclick = async () => {
+      del.disabled = true;
+      del.textContent = "删除中…";
+      stat.textContent = "正在释放空间…";
+      try { await invoke("delete_local_model"); }
+      catch (e) { stat.textContent = "删除失败：" + e; del.disabled = false; del.textContent = "重试"; }
+    };
+  } catch (e) { console.error(e); }
+}
+
+listen("model-deleted", (e) => {
+  const { ok, msg } = e.payload;
+  const stat = $("lmStat");
+  const del = $("lmDelete");
+  if (stat) stat.textContent = ok ? `✅ ${msg}` : `❌ ${msg}`;
+  if (del) { del.disabled = false; del.textContent = "删除"; }
+  setTimeout(() => { if (ok) refreshLocalModel(); }, 900);
+});
 $("gear").addEventListener("click", () => openSettings());
 $("cancel").addEventListener("click", () => $("settings").classList.remove("on"));
 $("settings").addEventListener("click", (e) => { if (e.target.id === "settings") $("settings").classList.remove("on"); });

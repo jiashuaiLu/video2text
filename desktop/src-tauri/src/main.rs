@@ -74,7 +74,7 @@ fn model_dir(root: &Path, slug: &str) -> PathBuf {
     root.join("work/hf/hub").join(format!("models--mlx-community--{slug}"))
 }
 
-/// 模型是否已就绪（用 huggingface_hub 校验文件完整性，避免体积误判）
+/// 模型状态：完整性校验 + 占用体积
 #[tauri::command]
 fn models_status() -> serde_json::Value {
     let root = project_root();
@@ -83,7 +83,13 @@ fn models_status() -> serde_json::Value {
     }
     let script = r#"
 import json
-from huggingface_hub import snapshot_download
+from huggingface_hub import snapshot_download, scan_cache_dir
+sizes = {}
+try:
+    for r in scan_cache_dir().repos:
+        sizes[r.repo_id] = round(r.size_on_disk / 1e6)
+except Exception:
+    pass
 out = {}
 for k, repo in (("asr", "mlx-community/Qwen3-ASR-1.7B-8bit"),
                 ("polish", "mlx-community/Qwen3.5-9B-4bit")):
@@ -92,19 +98,66 @@ for k, repo in (("asr", "mlx-community/Qwen3-ASR-1.7B-8bit"),
         out[k + "_ready"] = True
     except Exception:
         out[k + "_ready"] = False
+    out[k + "_mb"] = sizes.get(repo, 0)
 print(json.dumps(out))
 "#;
-    let out = Command::new(python_bin(&root))
+    match Command::new(python_bin(&root))
         .args(["-c", script])
         .env("HF_HOME", root.join("work/hf"))
-        .output();
-    match out {
+        .output()
+    {
         Ok(o) if o.status.success() => {
             let txt = String::from_utf8_lossy(&o.stdout).trim().to_string();
             serde_json::from_str(&txt).unwrap_or(serde_json::json!({"asr_ready": false, "polish_ready": false}))
         }
         _ => serde_json::json!({"asr_ready": false, "polish_ready": false}),
     }
+}
+
+fn do_delete(repo_id: &str, root: PathBuf, emit: &dyn Fn(String)) -> bool {
+    let script = format!(r#"
+from huggingface_hub import scan_cache_dir
+info = scan_cache_dir()
+revs = [rev.commit_hash for r in info.repos if r.repo_id == "{repo_id}" for rev in r.revisions]
+if not revs:
+    print("NOTFOUND"); raise SystemExit(0)
+s = info.delete_revisions(*revs)
+print(f"{{s.expected_freed_size / 1e9:.1f}}")
+s.execute()
+"#);
+    let out = Command::new(python_bin(&root))
+        .args(["-c", &script])
+        .env("HF_HOME", root.join("work/hf"))
+        .output();
+    match out {
+        Ok(o) if o.status.success() => {
+            let t = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            if t == "NOTFOUND" { emit("没有找到已下载的模型".into()); return true; }
+            emit(format!("已释放 {t} GB"));
+            true
+        }
+        Ok(o) => {
+            emit(format!("删除失败：{}", String::from_utf8_lossy(&o.stderr).chars().take(200).collect::<String>()));
+            false
+        }
+        Err(e) => { emit(format!("删除失败：{e}")); false }
+    }
+}
+
+/// 删除本地 AI 整理模型，释放空间
+#[tauri::command]
+fn delete_local_model(window: Window) -> Result<(), String> {
+    let root = project_root();
+    std::thread::spawn(move || {
+        let w = window.clone();
+        let ok = do_delete("mlx-community/Qwen3.5-9B-4bit", root, &|m| {
+            let _ = w.emit("model-deleted", serde_json::json!({"ok": true, "msg": m}));
+        });
+        if !ok {
+            let _ = window.emit("model-deleted", serde_json::json!({"ok": false, "msg": "删除未完成"}));
+        }
+    });
+    Ok(())
 }
 
 fn do_download(kind: &str, root: PathBuf, emit: &dyn Fn(String)) -> bool {
@@ -462,6 +515,15 @@ fn main() {
         }
     }
 
+    if let Some(pos) = std::env::args().position(|a| a == "--delete-model") {
+        if let Some(repo) = std::env::args().nth(pos + 1) {
+            let root = project_root();
+            let ok = do_delete(&repo, root, &|m| println!("{m}"));
+            println!("结果: {}", if ok { "OK" } else { "失败" });
+            return;
+        }
+    }
+
     // 命令行自检入口：video2text --check-env
     if std::env::args().any(|a| a == "--check-env") {
         println!("{}", check_env());
@@ -490,6 +552,7 @@ fn main() {
             check_env,
             models_status,
             download_models,
+            delete_local_model,
             copy_text,
             bootstrap,
             get_settings,
