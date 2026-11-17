@@ -219,6 +219,12 @@ fn download_models(kind: String, window: Window) -> Result<(), String> {
     Ok(())
 }
 
+/// 工程根目录，供前端把相对路径补全
+#[tauri::command]
+fn app_root() -> String {
+    project_root().to_string_lossy().to_string()
+}
+
 /// 环境自检：python3 / ffmpeg / Homebrew
 #[tauri::command]
 fn check_env() -> serde_json::Value {
@@ -550,6 +556,7 @@ fn main() {
             backend_status,
             ui_ready,
             bootstrap_needed,
+            app_root,
             check_env,
             models_status,
             download_models,
@@ -564,6 +571,14 @@ fn main() {
             open_out_dir
         ])
         .setup(|app| {
+            // 启动探针：区分「Rust 起来了」和「WebView 起来了」
+            let root = project_root();
+            let _ = std::fs::create_dir_all(root.join("work"));
+            let _ = std::fs::write(
+                root.join("work/boot.log"),
+                format!("rust-ok {}", std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)),
+            );
             let _ = app.get_webview_window("main");
             Ok(())
         })

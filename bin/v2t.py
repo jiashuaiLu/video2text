@@ -452,11 +452,19 @@ def main():
         tail = " + 规则排版" if (md.exists() and not args.no_format) else ""
         if not args.quiet:
             print("\n" + "=" * 56)
+        def show(pth):
+            if not args.quiet:
+                return str(pth)
+            try:
+                return str(pth.relative_to(ROOT))
+            except ValueError:
+                return str(pth)
+
         print(f"完成 {time.time() - t0:.0f}s（转写 + 术语纠错{tail}）")
         if md.exists() and not args.no_format:
-            print(f"文稿: {md}")
-        print(f"原文: {txt}")
-        print(f"字幕: {srt_path}")
+            print(f"文稿: {show(md)}")
+        print(f"原文: {show(txt)}")
+        print(f"字幕: {show(srt_path)}")
         if not args.quiet:
             print("=" * 56)
             print(raw[:400] + "…")
@@ -471,8 +479,12 @@ def main():
         f"{summary}## 正文\n\n{body}\n", encoding="utf-8")
     if not args.quiet:
         print("\n" + "=" * 56)
+    try:
+        shown = str(md.relative_to(ROOT)) if args.quiet else str(md)
+    except ValueError:
+        shown = str(md)
     print(f"完成 {time.time() - t0:.0f}s（深度整理）")
-    print(f"文稿: {md}")
+    print(f"文稿: {shown}")
     if not args.quiet:
         print("=" * 56)
         print(body[:400] + "…")

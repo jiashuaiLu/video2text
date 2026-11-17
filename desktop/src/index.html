@@ -397,6 +397,7 @@ const PKG_CMD = 'brew install python ffmpeg';
 let state = { backend: "local", provider: "deepseek", model: "", baseUrl: "", keySet: false };
 let lastMd = "";
 let lastCost = "";
+let APP_ROOT = "";
 let selProvider = "deepseek";
 let selModel = "";
 
@@ -753,10 +754,11 @@ listen("v2t-log", (e) => {
   const mDone = t.match(/^完成 (\d+)s/);
   if (mDone) lastCost = mDone[1];
   if (/文稿:/.test(t)) {
-    lastMd = t.replace(/^.*文稿:\s*/, "").trim();
+    const rel = t.replace(/^.*文稿:\s*/, "").trim();
+    lastMd = rel.startsWith("/") ? rel : (APP_ROOT ? APP_ROOT + "/" + rel : rel);
     setStep(4, "done");
     $("result").classList.add("on");
-    $("rTitle").textContent = lastMd.split("/").pop().replace(/\.md$/, "");
+    $("rTitle").textContent = rel.split("/").pop().replace(/\.md$/, "");
     $("rMeta").textContent = (lastCost ? `耗时 ${lastCost} 秒 · ` : "") + "已保存到 out 目录";
   }
 });
@@ -920,6 +922,8 @@ async function saveSettings(silent) {
 }
 $("save").addEventListener("click", () => saveSettings(false));
 bindSelect($("providerSel"));
+
+invoke("app_root").then((r) => { APP_ROOT = r; }).catch(() => {});
 
 invoke("ui_ready", { msg: "OK|" + document.body.scrollWidth + "x" + document.body.scrollHeight }).catch(() => {});
 </script>
