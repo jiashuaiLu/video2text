@@ -57,6 +57,31 @@ SUMMARY_SYSTEM = (
 )
 
 
+def ffmpeg_bin():
+    """定位 ffmpeg：环境变量 > 冻结包自带 > 工程内 > 系统 PATH。"""
+    env = os.environ.get("V2T_FFMPEG")
+    if env and Path(env).is_file():
+        return env
+    if getattr(sys, "frozen", False):
+        cand = Path(sys.executable).resolve().parent.parent / "ffmpeg"
+        if cand.is_file():
+            return str(cand)
+    for cand in (ROOT / "work/bin/ffmpeg", ROOT / "bin/ffmpeg"):
+        if cand.is_file():
+            return str(cand)
+    return "ffmpeg"
+
+
+def probe_media(path):
+    """用 ffmpeg -i 代替 ffprobe，返回 (是否有音轨, 时长秒)。"""
+    r = run([ffmpeg_bin(), "-hide_banner", "-i", str(path)])
+    err = (r.stderr or "") + (r.stdout or "")
+    has_audio = "Audio:" in err
+    m = re.search(r"Duration:\s*(\d+):(\d+):(\d+)\.(\d+)", err)
+    dur = (int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))) if m else 0
+    return has_audio, float(dur)
+
+
 def log(m):
     print(f"[v2t] {m}", flush=True)
 
@@ -185,9 +210,7 @@ def download(url, dest):
 
 
 def has_audio(p):
-    r = run(["ffprobe", "-v", "error", "-select_streams", "a",
-             "-show_entries", "stream=codec_type", "-of", "csv=p=0", str(p)])
-    return "audio" in (r.stdout or "")
+    return probe_media(p)[0]
 
 
 def download_best(cands, dest):
@@ -200,7 +223,7 @@ def download_best(cands, dest):
 
 
 def extract_wav(src, dest):
-    r = run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-vn",
+    r = run([ffmpeg_bin(), "-v", "error", "-y", "-i", str(src), "-vn",
              "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(dest)])
     if r.returncode != 0:
         raise RuntimeError(f"ffmpeg 失败: {r.stderr[-300:]}")
@@ -422,8 +445,7 @@ def main():
     txt = (asr_qwen3(wav, out_dir, stem, ctx) if args.asr == "qwen3"
            else asr_whisper(wav, out_dir, stem, ctx))
 
-    dur = float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                     "-of", "csv=p=0", str(wav)]).stdout.strip() or 0)
+    dur = probe_media(wav)[1]
     raw = txt.read_text(encoding="utf-8").strip()
 
     # 术语纠错：txt 与 srt 同步修正
