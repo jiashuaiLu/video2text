@@ -67,7 +67,7 @@ CARDS = [
     (dict(dark=True, layout="cover"), """
       <div class="tag">开源 · 本地运行</div>
       <h1>我把抖音视频<br>变成了<span class="hl">能读的文章</span></h1>
-      <p class="lead">贴个链接，40 秒<br>出来一份带标点、分好段的文稿</p>
+      <p class="lead">贴个链接，等它十分之一的时间<br>出来一份带标点、分好段的文稿</p>
       <div class="shot"><img src="%(shot)s"></div>
     """),
     # 2 痛点
@@ -79,11 +79,11 @@ CARDS = [
     """),
     # 3 速度
     ({}, """
-      <div class="tag">实测</div>
-      <h1>7 分 42 秒的视频</h1>
-      <div class="row"><div class="big">40</div><div class="unit">秒出稿</div></div>
-      <div class="box"><div class="t">时间都花在哪</div>
-        <div class="c">抓流 8s · 转写 24s<br>术语纠错 0.3s · 排版 0.1s</div></div>
+      <div class="tag">速度</div>
+      <h1>视频多长<br>就等它<span class="hl">十分之一</span>的时间</h1>
+      <div class="row"><div class="big">10×</div><div class="unit">实时速度</div></div>
+      <div class="box"><div class="t">实测（M4 Pro）</div>
+        <div class="c">7 分 42 秒的视频 → 约 40 秒出稿<br>只算转写更快，12-20 倍实时</div></div>
       <p class="lead">全程不上传，断网也能用</p>
     """),
     # 4 效果对比
