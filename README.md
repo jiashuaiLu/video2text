@@ -40,7 +40,7 @@
 
 ## 下载即用（推荐）
 
-到 [Releases](https://github.com/jiashuaiLu/video2text/releases) 下载 `视频转文稿-macOS.zip`：
+到 [Releases](https://github.com/jiashuaiLu/video2text/releases) 下载 `video2text-macOS-arm64.zip`：
 
 1. 解压，把 App 拖进「应用程序」
 2. 首次打开：右键点图标 → 打开（未做公证签名，需手动放行一次）
