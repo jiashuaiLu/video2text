@@ -107,7 +107,7 @@ npx tauri build          # 产物在 src-tauri/target/release/bundle/macos/
 
 ## 已知限制
 
-- **仅 macOS Apple Silicon**：转写依赖 MLX，Intel Mac / Windows / Linux 需要换推理后端（whisper.cpp 或 faster-whisper），见 `docs/PLATFORMS.md`
+- **仅 macOS Apple Silicon**：转写依赖 MLX，Intel Mac / Windows / Linux 需要换推理后端（whisper.cpp 或 faster-whisper）
 - 抖音部分内容需要登录态；私密/已删除视频抓不到
 - 纯音乐视频没有转写价值
 - 规则排版无法修复语义级错误（如「真实曲线」应为「真实案例」）
@@ -126,4 +126,4 @@ desktop/          Tauri 桌面应用（Rust + 原生 HTML）
 
 ## License
 
-MIT。商用分析见 [docs/PLATFORMS.md](docs/PLATFORMS.md)。
+MIT。

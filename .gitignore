@@ -26,3 +26,9 @@ desktop/src-tauri/gen/
 
 # macOS
 .DS_Store
+
+# 运营物料 / 商业分析（不入库）
+docs/cards/
+docs/publish/
+docs/PLATFORMS.md
+docs/XIAOHONGSHU.md
